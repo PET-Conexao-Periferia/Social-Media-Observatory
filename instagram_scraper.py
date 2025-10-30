@@ -67,28 +67,93 @@ def raspar_perfil(driver, perfil_alvo):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(3)
 
-    # Encontrar todos os links de posts (â€<a>â€ que levam para '/p/')
+    # Encontrar todos os links de posts (â€<a>â€ que levam para '/p/') e coletar URLs únicas
     anchors = driver.find_elements(By.TAG_NAME, "a")
-    post_links = []
-    seen = set()
+    seen = []
+    seen_set = set()
 
     for a in anchors:
         href = a.get_attribute('href')
         if href and '/p/' in href:
-            if href in seen:
+            if href in seen_set:
                 continue
-            seen.add(href)
-            caption = None
+            seen_set.add(href)
+            seen.append(href)
+
+    # Agora iterar sobre cada post para extrair legenda e comentários
+    dados_completos = []
+
+    for post_url in seen:
+        try:
+            driver.get(post_url)
+            time.sleep(5)
+
+            # Tenta localizar o container do post
             try:
-                img = a.find_element(By.TAG_NAME, 'img')
-                caption = img.get_attribute('alt')
+                article = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.TAG_NAME, 'article'))
+                )
             except Exception:
-                # Se não houver imagem direta dentro do link, ignoramos a legenda
-                caption = None
+                article = None
 
-            post_links.append({'url': href, 'caption': caption})
+            # Capturar a legenda principal do post
+            legenda = None
+            if article is not None:
+                try:
+                    span_legenda = article.find_element(By.XPATH, ".//span[@dir='auto']")
+                    legenda = span_legenda.text
+                except Exception:
+                    legenda = None
 
-    return post_links
+            # Preparar lista de comentários
+            lista_comentarios = []
+
+            # Rolar a página 2 vezes para tentar carregar mais comentários
+            for _ in range(2):
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(3)
+
+            # Encontrar elementos que representem comentários
+            if article is not None:
+                # Geralmente comentários estão dentro de <ul> <li>
+                comment_items = article.find_elements(By.XPATH, ".//ul//li")
+            else:
+                comment_items = []
+
+            for item in comment_items:
+                try:
+                    username = None
+                    comment_text = None
+
+                    try:
+                        a_user = item.find_element(By.XPATH, ".//a")
+                        username = a_user.text
+                    except Exception:
+                        username = None
+
+                    try:
+                        span_comment = item.find_element(By.XPATH, ".//span[@dir='auto']")
+                        comment_text = span_comment.text
+                    except Exception:
+                        comment_text = None
+
+                    # Adicionar somente se houver texto de comentário
+                    lista_comentarios.append({'username': username, 'comment_text': comment_text})
+                except Exception:
+                    # Ignora itens que não correspondam ao padrão esperado
+                    continue
+
+            dados_completos.append({
+                'post_url': post_url,
+                'legenda_post': legenda,
+                'comentarios': lista_comentarios
+            })
+
+        except Exception as e:
+            # Em caso de erro com um post, registra entrada com informação mínima
+            dados_completos.append({'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e)})
+
+    return dados_completos
 
 if __name__ == "__main__":
     driver = create_driver(headless=False)
