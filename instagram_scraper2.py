@@ -189,13 +189,7 @@ def raspar_perfil(driver, perfil_alvo):
 
             print(f'Encontrados {len(comment_items)} itens possíveis de comentário no artigo')
 
-            # Limitar a 10 comentários por post
-            comentarios_processados = 0
             for item in comment_items:
-                # Parar após coletar 10 comentários
-                if comentarios_processados >= 10:
-                    break
-
                 try:
                     username = None
                     comment_text = None
@@ -222,7 +216,6 @@ def raspar_perfil(driver, perfil_alvo):
 
                     if comment_text:
                         lista_comentarios.append({'username': username, 'comment_text': comment_text})
-                        comentarios_processados += 1  # Incrementar contador
                 except Exception:
                     # Ignora itens que não correspondam ao padrão esperado
                     continue
@@ -259,7 +252,8 @@ if __name__ == "__main__":
         pd.set_option('display.width', None)
         print(df)
         # Mostrar resumo
-        print(f"\nTotal de posts processados: {len(df)}")
+        print(f"\nTotal de posts encontrados: {len(seen)}")
+        print(f"Total de posts processados: {len(df)}")
     finally:
         # Fechar o driver ao final
         driver.quit()
