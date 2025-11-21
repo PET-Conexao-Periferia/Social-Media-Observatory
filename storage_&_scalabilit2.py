@@ -4,16 +4,18 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 import time
 import json
 import re
 import pandas as pd
+import os
 
 # Variáveis de configuração
-USUARIO = ""
-SENHA = ""
+USUARIO = "userteste747"
+SENHA = "kelle123"
 # Lista de perfis a raspar (sem @). Adicione nomes aqui ou use o arquivo 'perfis.txt'
-PERFIS = ["igarassuordinarioo", "igarassunoticiaoficial", "prefeituradeigarassu"]  # exemplo de perfil
+PERFIS = ["igarassuordinarioo", "igarassunoticiaoficial", "prefeituradeigarassu", "thenews.cc"]  # exemplo de perfil
 
 # Opcional: carregar perfis de um arquivo 'perfis.txt' (uma linha por perfil)
 try:
@@ -44,6 +46,87 @@ def create_driver(headless=False):
         driver = webdriver.Chrome(options=options)
     return driver
 
+
+def salvar_cookies(driver, caminho='cookies_instagram.json'):
+    try:
+        cookies = driver.get_cookies()
+        with open(caminho, 'w', encoding='utf-8') as f:
+            json.dump(cookies, f, ensure_ascii=False, indent=2)
+        print(f'Cookies salvos em {caminho}')
+    except Exception as e:
+        print(f'Falha ao salvar cookies: {e}')
+
+
+def carregar_cookies(driver, caminho='cookies_instagram.json'):
+    if not os.path.exists(caminho):
+        return False
+    try:
+        driver.get('https://www.instagram.com/')
+        time.sleep(2)
+        with open(caminho, 'r', encoding='utf-8') as f:
+            cookies = json.load(f)
+        for c in cookies:
+            # remover chaves que podem causar erro no add_cookie
+            c.pop('sameSite', None)
+            try:
+                driver.add_cookie(c)
+            except Exception:
+                # continuar se cookie falhar
+                continue
+        driver.refresh()
+        time.sleep(3)
+        print(f'Cookies carregados de {caminho}')
+        return True
+    except Exception as e:
+        print(f'Falha ao carregar cookies: {e}')
+        return False
+
+
+def is_logged_in(driver, usuario):
+    try:
+        # Não navegar aqui de novo para não interromper o fluxo atual
+        # Tentar checar cookies primeiro
+        try:
+            cookies = driver.get_cookies()
+            for c in cookies:
+                if c.get('name') == 'sessionid' and c.get('value'):
+                    return True
+        except Exception:
+            pass
+
+        # Caso não haja cookie visível, tentar encontrar indicador de login na página carregada
+        try:
+            links = driver.find_elements(By.XPATH, f"//a[contains(@href, '/{usuario}/')]")
+            if links:
+                return True
+        except Exception:
+            pass
+
+        try:
+            avatar = driver.find_elements(By.CSS_SELECTOR, 'svg[aria-label="Profile"]')
+            if avatar:
+                return True
+        except Exception:
+            pass
+
+        return False
+    except Exception:
+        return False
+
+
+def wait_for_login_confirmation(driver, usuario, timeout=60, poll=2):
+    """Aguarda até que a sessão esteja ativa por meio de cookies ou elementos da UI."""
+    waited = 0
+    while waited < timeout:
+        try:
+            if is_logged_in(driver, usuario):
+                return True
+        except Exception:
+            pass
+        time.sleep(poll)
+        waited += poll
+    return False
+
 # Função de login
 def login_instagram(driver, usuario, senha):
     login_url = "https://www.instagram.com/accounts/login/"
@@ -62,10 +145,75 @@ def login_instagram(driver, usuario, senha):
 
         # Clicar no botão de login
         login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
-        login_button.click()
+        try:
+            driver.execute_script("arguments[0].click();", login_button)
+        except Exception:
+            login_button.click()
 
-        # Tempo para completar o login e permitir interação manual com pop-ups (ex: "Salvar informações de login")
-        time.sleep(10)
+        # Primeiro verificar se o login foi confirmado rapidamente (sem 2FA)
+        if wait_for_login_confirmation(driver, usuario, timeout=12, poll=2):
+            print('Login confirmado sem 2FA.')
+            return True
+
+        # Caso não confirmado, aguardar e tratar 2FA interativo
+        print('Aguardando possível prompt de 2FA (até 5 minutos)...')
+        code_input = None
+        try:
+            # Aguarda até 5 minutos pela presença de um campo de verificação
+            code_input = WebDriverWait(driver, 300).until(
+                EC.presence_of_element_located((By.NAME, "verificationCode"))
+            )
+        except Exception:
+            # Se não apareceu com esse name, tentar localizar por outros seletores em loop
+            elapsed = 0
+            poll = 2
+            max_wait = 300
+            while elapsed < max_wait and code_input is None:
+                try:
+                    code_input = driver.find_element(By.XPATH, "//input[@type='text' and (@maxlength='6' or contains(@aria-label, 'Código') or contains(@placeholder, 'Código'))]")
+                    break
+                except Exception:
+                    time.sleep(poll)
+                    elapsed += poll
+
+        if code_input:
+            # Pausar para input do usuário (interativo). O usuário pode demorar para receber o código.
+            codigo = input("Insira o código 2FA recebido (SMS/Authenticator) e pressione Enter quando pronto: ").strip()
+            try:
+                code_input.clear()
+                code_input.send_keys(codigo)
+            except Exception:
+                pass
+
+            # tentar clicar no botão de confirmação (vários textos possíveis)
+            try:
+                btn = driver.find_element(By.XPATH, "//button[contains(., 'Confirm') or contains(., 'Enviar') or contains(., 'Next') or contains(., 'Confirmar') or contains(., 'Submit')]")
+                try:
+                    driver.execute_script("arguments[0].click();", btn)
+                except Exception:
+                    btn.click()
+            except Exception:
+                try:
+                    code_input.send_keys(Keys.ENTER)
+                except Exception:
+                    pass
+
+            # Aguardar confirmação de login (checar cookies/elementos)
+            if wait_for_login_confirmation(driver, usuario, timeout=60, poll=2):
+                print('Login confirmado após 2FA.')
+                return True
+            else:
+                print('Aviso: não foi possível confirmar o login imediatamente após 2FA.')
+                return False
+
+        else:
+            # Se não houver campo de 2FA detectado, aguardar alguns segundos para pop-ups manuais
+            time.sleep(5)
+            # tentar uma última vez confirmar login
+            if wait_for_login_confirmation(driver, usuario, timeout=10, poll=2):
+                print('Login confirmado (fallback).')
+                return True
+            return False
     except Exception as e:
         print(f"Erro durante o login: {e}")
 
@@ -79,7 +227,7 @@ def raspar_perfil(driver, perfil_alvo):
     time.sleep(10)  # Aumentado para 10 segundos
 
     # Rolar a página para baixo 100 vezes para carregar mais posts
-    for i in range(100):  # Aumentado para 100 vezes
+    for i in range(5):  # Aumentado para 100 vezes
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)  # Reduzido para 2 segundos para acelerar
         print(f"Rolagem {i+1}/100 completada")
@@ -343,23 +491,150 @@ def raspar_perfil(driver, perfil_alvo):
 
 # Função para salvar dados em arquivo JSON
 def salvar_json(dados, nome_arquivo='dados_instagram.json'):
+    """
+    Salva cada post em um arquivo JSON separado, organizando por pasta de perfil.
+    Também separa metadados (likes, comments_count) da legenda e adiciona likes por comentário quando possível.
+    """
     try:
-        # Debug: mostrar quantos comentários temos antes de salvar
+        base_dir = 'dados_instagram_por_perfil'
+        os.makedirs(base_dir, exist_ok=True)
+
         total_comentarios = sum(len(post.get('comentarios', [])) for post in dados)
-        print(f'\nDEBUG: Total de comentários a salvar: {total_comentarios}')
-        
-        with open(nome_arquivo, 'w', encoding='utf-8') as f:
-            json.dump(dados, f, ensure_ascii=False, indent=2)
-        print(f'Dados salvos com sucesso em {nome_arquivo}')
+        print(f'\nDEBUG: Total de comentários a processar: {total_comentarios}')
+
+        index = []
+
+        for post in dados:
+            perfil = post.get('source_profile') or 'unknown_profile'
+            perfil_dir = os.path.join(base_dir, perfil)
+            os.makedirs(perfil_dir, exist_ok=True)
+
+            # Extrair slug do post para nome do arquivo
+            post_url = post.get('post_url') or ''
+            slug = None
+            try:
+                m = re.search(r"/p/([^/]+)/", post_url)
+                if m:
+                    slug = m.group(1)
+                else:
+                    # fallback: usar parte final da URL
+                    slug = post_url.rstrip('/').split('/')[-1]
+            except Exception:
+                slug = str(int(time.time() * 1000))
+
+            # Separar metadados da legenda
+            legenda = post.get('legenda_post') or ''
+            likes = None
+            comments_count = None
+            if legenda:
+                # procurar padrões como '699 likes, 8 comments' (insensível a maiúsculas)
+                m = re.search(r"([\d\.,]+)\s*likes?[,;:\s]+([\d\.,]+)\s*comments?", legenda, re.I)
+                if m:
+                    try:
+                        likes = int(re.sub(r"[^0-9]", "", m.group(1)))
+                    except Exception:
+                        likes = None
+                    try:
+                        comments_count = int(re.sub(r"[^0-9]", "", m.group(2)))
+                    except Exception:
+                        comments_count = None
+                    # remover essa parte da legenda
+                    legenda = re.sub(re.escape(m.group(0)), '', legenda).strip(' -:\n')
+                else:
+                    # tentar achar apenas likes ou apenas comments
+                    m2 = re.search(r"([\d\.,]+)\s*likes?", legenda, re.I)
+                    if m2:
+                        try:
+                            likes = int(re.sub(r"[^0-9]", "", m2.group(1)))
+                        except Exception:
+                            likes = None
+                        legenda = re.sub(re.escape(m2.group(0)), '', legenda).strip(' -:\n')
+                    m3 = re.search(r"([\d\.,]+)\s*comments?", legenda, re.I)
+                    if m3:
+                        try:
+                            comments_count = int(re.sub(r"[^0-9]", "", m3.group(1)))
+                        except Exception:
+                            comments_count = None
+                        legenda = re.sub(re.escape(m3.group(0)), '', legenda).strip(' -:\n')
+
+            # Processar comentários: tentar extrair curtidas por comentário
+            comentarios = post.get('comentarios', []) or []
+            comentarios_proc = []
+            for item in comentarios:
+                c_user = item.get('username') or ''
+                c_text = item.get('comment_text') or ''
+                c_likes = item.get('likes') if 'likes' in item else None
+
+                # Se não houver likes já extraído, tentar inferir de campos possivelmente presentes
+                if c_likes is None:
+                    # procurar padrão numérico isolado no texto residual (por exemplo '2' em elemento separado)
+                    # já que aqui trabalhamos com dados extraídos previamente, tentaremos inferir de 'comment_text'
+                    mlike = re.search(r"\b([\d\.,]+)\b", c_text)
+                    if mlike:
+                        # somente aceitar como likes se parecer plausível (pequeno número)
+                        try:
+                            v = int(re.sub(r"[^0-9]", "", mlike.group(1)))
+                            if v >= 1 and v <= 100000:
+                                c_likes = v
+                                # remover do texto se era um token separado
+                                c_text = re.sub(re.escape(mlike.group(0)), '', c_text).strip()
+                        except Exception:
+                            c_likes = None
+
+                comentarios_proc.append({'username': c_user, 'comment_text': c_text, 'likes': c_likes or 0})
+
+            # Montar dicionário final para o post
+            post_obj = {
+                'post_url': post_url,
+                'slug': slug,
+                'legenda_post': legenda,
+                'likes': likes or 0,
+                'comments_count': comments_count if comments_count is not None else len(comentarios_proc),
+                'comentarios': comentarios_proc,
+                'source_profile': perfil
+            }
+
+            # Salvar em arquivo por post
+            filename = os.path.join(perfil_dir, f"{slug}.json")
+            try:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    json.dump(post_obj, f, ensure_ascii=False, indent=2)
+                print(f'Salvo post em {filename}')
+            except Exception as e:
+                print(f'Erro ao salvar post {slug}: {e}')
+
+            index.append({'perfil': perfil, 'post_url': post_url, 'file': filename})
+
+        # Salvar índice geral
+        try:
+            idx_file = os.path.join(base_dir, 'index.json')
+            with open(idx_file, 'w', encoding='utf-8') as f:
+                json.dump(index, f, ensure_ascii=False, indent=2)
+            print(f'Índice salvo em {idx_file}')
+        except Exception as e:
+            print(f'Erro ao salvar índice: {e}')
+
     except Exception as e:
-        print(f'Erro ao salvar arquivo JSON: {e}')
+        print(f'Erro ao salvar arquivos JSON por post: {e}')
 
 if __name__ == "__main__":
     driver = create_driver(headless=False)
 
     try:
-        # 1) Fazer login
-        login_instagram(driver, USUARIO, SENHA)
+        # 1) Tentar carregar sessão salva (cookies) para evitar re-login e 2FA
+        loaded = carregar_cookies(driver)
+        if loaded and is_logged_in(driver, USUARIO):
+            print('Sessão restaurada via cookies. Pulando login.')
+        else:
+            print('Necessário efetuar login interativo (pode requerer 2FA).')
+            ok = login_instagram(driver, USUARIO, SENHA)
+            if ok:
+                try:
+                    salvar_cookies(driver)
+                except Exception as e:
+                    print(f'Não foi possível salvar cookies: {e}')
+            else:
+                print('Atenção: login não confirmado. Você pode continuar manualmente no navegador aberto.')
 
         # 2) Raspar dados de múltiplos perfis
         all_data = []
