@@ -1,3 +1,6 @@
+# requisitos:
+# pip install selenium pandas webdriver-manager python-dotenv
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -10,24 +13,27 @@ import json
 import re
 import pandas as pd
 import os
+from dotenv import load_dotenv
+import logging
 
-# Variáveis de configuração
-USUARIO = ""
-SENHA = ""
-# Lista de perfis a raspar (sem @). Adicione nomes aqui ou use o arquivo 'perfis.txt'
-PERFIS = ["prefeituradeigarassu", ]  # exemplo de perfil
+# CARREGAR VARIÁVEIS DO .ENV
+load_dotenv()
+USUARIO = os.getenv("USUARIO")
+SENHA = os.getenv("SENHA")
+PERFIS = os.getenv("PERFIS").split(",") if os.getenv("PERFIS") else []
+
 
 # Opcional: carregar perfis de um arquivo 'perfis.txt' (uma linha por perfil)
-try:
-    with open('perfis.txt', 'r', encoding='utf-8') as pf:
-        file_perfis = [line.strip() for line in pf if line.strip() and not line.strip().startswith('#')]
-        if file_perfis:
-            PERFIS = file_perfis
-            print(f'Perfis carregados de perfis.txt: {PERFIS}')
-except FileNotFoundError:
-    pass
-except Exception as e:
-    print(f'Erro ao ler perfis de perfis.txt: {e}')
+# try:
+#     with open('perfis.txt', 'r', encoding='utf-8') as pf:
+#         file_perfis = [line.strip() for line in pf if line.strip() and not line.strip().startswith('#')]
+#         if file_perfis:
+#             PERFIS = file_perfis
+#             print(f'Perfis carregados de perfis.txt: {PERFIS}')
+# except FileNotFoundError:
+#     pass
+# except Exception as e:
+#     print(f'Erro ao ler perfis de perfis.txt: {e}')
 
 # Configuração do WebDriver para o Chrome
 def create_driver(headless=False):
