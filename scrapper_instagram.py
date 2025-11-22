@@ -12,10 +12,10 @@ import pandas as pd
 import os
 
 # Variáveis de configuração
-USUARIO = "userteste747"
-SENHA = "kelle123"
+USUARIO = ""
+SENHA = ""
 # Lista de perfis a raspar (sem @). Adicione nomes aqui ou use o arquivo 'perfis.txt'
-PERFIS = ["igarassuordinarioo", "igarassunoticiaoficial", "prefeituradeigarassu", "thenews.cc"]  # exemplo de perfil
+PERFIS = ["prefeituradeigarassu", ]  # exemplo de perfil
 
 # Opcional: carregar perfis de um arquivo 'perfis.txt' (uma linha por perfil)
 try:
