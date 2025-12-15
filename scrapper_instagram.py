@@ -15,6 +15,8 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 import logging
+import math
+
 
 # CARREGAR VARIÁVEIS DO .ENV
 load_dotenv()
@@ -24,18 +26,21 @@ PERFIS = os.getenv("PERFIS").split(",") if os.getenv("PERFIS") else []
 
 
 # Opcional: carregar perfis de um arquivo 'perfis.txt' (uma linha por perfil)
-# try:
-#     with open('perfis.txt', 'r', encoding='utf-8') as pf:
-#         file_perfis = [line.strip() for line in pf if line.strip() and not line.strip().startswith('#')]
-#         if file_perfis:
-#             PERFIS = file_perfis
-#             print(f'Perfis carregados de perfis.txt: {PERFIS}')
-# except FileNotFoundError:
-#     pass
-# except Exception as e:
-#     print(f'Erro ao ler perfis de perfis.txt: {e}')
+try:
+    with open('perfis.txt', 'r', encoding='utf-8') as pf:
+        file_perfis = [line.strip() for line in pf if line.strip()
+                       and not line.strip().startswith('#')]
+        if file_perfis:
+            PERFIS = file_perfis
+            print(f'Perfis carregados de perfis.txt: {PERFIS}')
+except FileNotFoundError:
+    pass
+except Exception as e:
+    print(f'Erro ao ler perfis de perfis.txt: {e}')
 
 # Configuração do WebDriver para o Chrome
+
+
 def create_driver(headless=False):
     options = Options()
     if headless:
@@ -102,14 +107,16 @@ def is_logged_in(driver, usuario):
 
         # Caso não haja cookie visível, tentar encontrar indicador de login na página carregada
         try:
-            links = driver.find_elements(By.XPATH, f"//a[contains(@href, '/{usuario}/')]")
+            links = driver.find_elements(
+                By.XPATH, f"//a[contains(@href, '/{usuario}/')]")
             if links:
                 return True
         except Exception:
             pass
 
         try:
-            avatar = driver.find_elements(By.CSS_SELECTOR, 'svg[aria-label="Profile"]')
+            avatar = driver.find_elements(
+                By.CSS_SELECTOR, 'svg[aria-label="Profile"]')
             if avatar:
                 return True
         except Exception:
@@ -134,6 +141,8 @@ def wait_for_login_confirmation(driver, usuario, timeout=60, poll=2):
     return False
 
 # Função de login
+
+
 def login_instagram(driver, usuario, senha):
     login_url = "https://www.instagram.com/accounts/login/"
     driver.get(login_url)
@@ -141,7 +150,8 @@ def login_instagram(driver, usuario, senha):
     # Espera os campos de login aparecerem
     try:
         wait = WebDriverWait(driver, 15)
-        username_input = wait.until(EC.presence_of_element_located((By.NAME, "username")))
+        username_input = wait.until(
+            EC.presence_of_element_located((By.NAME, "username")))
         password_input = driver.find_element(By.NAME, "password")
 
         username_input.clear()
@@ -150,7 +160,8 @@ def login_instagram(driver, usuario, senha):
         password_input.send_keys(senha)
 
         # Clicar no botão de login
-        login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
+        login_button = driver.find_element(
+            By.XPATH, "//button[@type='submit']")
         try:
             driver.execute_script("arguments[0].click();", login_button)
         except Exception:
@@ -176,7 +187,8 @@ def login_instagram(driver, usuario, senha):
             max_wait = 300
             while elapsed < max_wait and code_input is None:
                 try:
-                    code_input = driver.find_element(By.XPATH, "//input[@type='text' and (@maxlength='6' or contains(@aria-label, 'Código') or contains(@placeholder, 'Código'))]")
+                    code_input = driver.find_element(
+                        By.XPATH, "//input[@type='text' and (@maxlength='6' or contains(@aria-label, 'Código') or contains(@placeholder, 'Código'))]")
                     break
                 except Exception:
                     time.sleep(poll)
@@ -184,7 +196,8 @@ def login_instagram(driver, usuario, senha):
 
         if code_input:
             # Pausar para input do usuário (interativo). O usuário pode demorar para receber o código.
-            codigo = input("Insira o código 2FA recebido (SMS/Authenticator) e pressione Enter quando pronto: ").strip()
+            codigo = input(
+                "Insira o código 2FA recebido (SMS/Authenticator) e pressione Enter quando pronto: ").strip()
             try:
                 code_input.clear()
                 code_input.send_keys(codigo)
@@ -193,7 +206,8 @@ def login_instagram(driver, usuario, senha):
 
             # tentar clicar no botão de confirmação (vários textos possíveis)
             try:
-                btn = driver.find_element(By.XPATH, "//button[contains(., 'Confirm') or contains(., 'Enviar') or contains(., 'Next') or contains(., 'Confirmar') or contains(., 'Submit')]")
+                btn = driver.find_element(
+                    By.XPATH, "//button[contains(., 'Confirm') or contains(., 'Enviar') or contains(., 'Next') or contains(., 'Confirmar') or contains(., 'Submit')]")
                 try:
                     driver.execute_script("arguments[0].click();", btn)
                 except Exception:
@@ -209,7 +223,8 @@ def login_instagram(driver, usuario, senha):
                 print('Login confirmado após 2FA.')
                 return True
             else:
-                print('Aviso: não foi possível confirmar o login imediatamente após 2FA.')
+                print(
+                    'Aviso: não foi possível confirmar o login imediatamente após 2FA.')
                 return False
 
         else:
@@ -223,7 +238,42 @@ def login_instagram(driver, usuario, senha):
     except Exception as e:
         print(f"Erro durante o login: {e}")
 
+# Função para obter número de seguidores
+
+
+def obter_seguidores(driver):
+    try:
+        elem = driver.find_element(
+            By.XPATH, "//a[contains(@href, '/followers/')]/span")
+
+        texto = elem.get_attribute('title') or elem.text
+        texto = texto.lower().strip()
+        texto = texto.replace('seguidores', '').strip()
+        texto = texto.replace(',', '.')
+
+        match = re.search(r"[\d\.]+", texto)
+
+        if not match:
+            return 0
+
+        valor = float(match.group())
+
+        if 'mil' in texto:
+            valor *= 1_000
+
+        elif 'mi' in texto or 'milh' in texto:
+            valor *= 1_000_000
+
+        return int(valor)
+
+    except Exception as e:
+
+        print(f"Erro ao obter seguidores: {e}")
+        return 0
+
 # Função para raspar dados do perfil
+
+
 def raspar_perfil(driver, perfil_alvo):
     perfil_url = f"https://www.instagram.com/{perfil_alvo}/"
     driver.get(perfil_url)
@@ -232,21 +282,26 @@ def raspar_perfil(driver, perfil_alvo):
     # Espera a página carregar
     time.sleep(10)  # Aumentado para 10 segundos
 
+    seguidores = obter_seguidores(driver)
+    print(f"Seguidores do perfil {perfil_alvo}: {seguidores}")
+
     # Rolar a página para baixo 100 vezes para carregar mais posts
     for i in range(5):  # Aumentado para 100 vezes
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        driver.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)  # Reduzido para 2 segundos para acelerar
         print(f"Rolagem {i+1}/100 completada")
 
     # Encontrar todos os links de posts que levam para '/p/' e coletar URLs únicas
     try:
         wait = WebDriverWait(driver, 10)
-        anchors = wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, "a")))
+        anchors = wait.until(
+            EC.presence_of_all_elements_located((By.TAG_NAME, "a")))
         print(f"Encontrados {len(anchors)} links totais")
     except Exception as e:
         print(f"Erro ao procurar links: {e}")
         anchors = []
-    
+
     seen = []
     seen_set = set()
 
@@ -288,7 +343,8 @@ def raspar_perfil(driver, perfil_alvo):
 
             # 1) Fallback: tentar meta tag og:description (contém legenda + info)
             try:
-                meta = driver.find_element(By.CSS_SELECTOR, "meta[property='og:description']")
+                meta = driver.find_element(
+                    By.CSS_SELECTOR, "meta[property='og:description']")
                 if meta:
                     legenda = meta.get_attribute('content')
                     if legenda:
@@ -299,8 +355,10 @@ def raspar_perfil(driver, perfil_alvo):
             # 2) Se não encontrou via meta, usar heurística dentro do article
             if not legenda and article is not None:
                 try:
-                    spans = article.find_elements(By.XPATH, ".//span[@dir='auto']")
-                    texts = [s.text.strip() for s in spans if s.text and s.text.strip()]
+                    spans = article.find_elements(
+                        By.XPATH, ".//span[@dir='auto']")
+                    texts = [s.text.strip()
+                             for s in spans if s.text and s.text.strip()]
                     if texts:
                         # legenda costuma ser o texto mais longo
                         legenda = max(texts, key=len)
@@ -320,7 +378,8 @@ def raspar_perfil(driver, perfil_alvo):
                     'view more', 'see more', 'carregar mais'
                 ]
                 # Construir regex para casar palavras/frases inteiras (case-insensitive)
-                pattern = re.compile(r"\\b(" + "|".join(re.escape(k) for k in keywords) + r")\\b", re.I)
+                pattern = re.compile(
+                    r"\\b(" + "|".join(re.escape(k) for k in keywords) + r")\\b", re.I)
 
                 # Tentar apenas em botões visíveis/ativos — evita clicar em perfis ou divs
                 for _ in range(5):
@@ -346,7 +405,8 @@ def raspar_perfil(driver, perfil_alvo):
                             if pattern.search(txt_l):
                                 print(f"Tentando clicar em botão: {txt_l}")
                                 try:
-                                    driver.execute_script("arguments[0].click();", elem)
+                                    driver.execute_script(
+                                        "arguments[0].click();", elem)
                                 except Exception:
                                     try:
                                         elem.click()
@@ -365,7 +425,8 @@ def raspar_perfil(driver, perfil_alvo):
 
             # Rolar a página 2 vezes para tentar carregar mais comentários
             for _ in range(2):
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                driver.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight);")
                 time.sleep(2)
 
             # Encontrar elementos que representem comentários (tentando múltiplos seletores)
@@ -376,26 +437,32 @@ def raspar_perfil(driver, perfil_alvo):
 
                 # Tentativa 2: divs que contenham spans com dir='auto'
                 if not comment_items:
-                    comment_items = article.find_elements(By.XPATH, ".//div[.//span[@dir='auto']]")
+                    comment_items = article.find_elements(
+                        By.XPATH, ".//div[.//span[@dir='auto']]")
 
                 # Tentativa 3: qualquer div que tenha uma estrutura típica de comentário
                 if not comment_items:
-                    comment_items = article.find_elements(By.XPATH, ".//div[.//a and .//span[@dir='auto']]")
+                    comment_items = article.find_elements(
+                        By.XPATH, ".//div[.//a and .//span[@dir='auto']]")
 
             # Fallback global: caso não tenhamos encontrado nada no article (ou article não existe),
             # procurar spans com dir='auto' em toda a página e inferir comentários por proximidade
             if not comment_items:
                 try:
-                    spans = driver.find_elements(By.XPATH, "//span[@dir='auto']")
-                    print(f'Fallback: encontrados {len(spans)} spans com dir="auto" na página')
+                    spans = driver.find_elements(
+                        By.XPATH, "//span[@dir='auto']")
+                    print(
+                        f'Fallback: encontrados {len(spans)} spans com dir="auto" na página')
                     candidates = []
                     seen_ancestors = set()
                     for s in spans:
                         try:
                             # procurar um ancestor div que contenha um link (usuário)
-                            ancestor = s.find_element(By.XPATH, "./ancestor::div[.//a][1]")
+                            ancestor = s.find_element(
+                                By.XPATH, "./ancestor::div[.//a][1]")
                             # usar id(obj) ou text snapshot para deduplicar
-                            key = (ancestor.get_attribute('innerText') or '')[:200]
+                            key = (ancestor.get_attribute(
+                                'innerText') or '')[:200]
                             if key in seen_ancestors:
                                 continue
                             seen_ancestors.add(key)
@@ -403,11 +470,13 @@ def raspar_perfil(driver, perfil_alvo):
                         except Exception:
                             continue
                     comment_items = candidates
-                    print(f'Fallback: candidatos a comentário obtidos: {len(comment_items)}')
+                    print(
+                        f'Fallback: candidatos a comentário obtidos: {len(comment_items)}')
                 except Exception as e:
                     print(f'Erro no fallback de spans: {e}')
 
-            print(f'Encontrados {len(comment_items)} itens possíveis de comentário no artigo')
+            print(
+                f'Encontrados {len(comment_items)} itens possíveis de comentário no artigo')
 
             # Coletar todos os comentários do post (sem limite)
             comentarios_processados = 0
@@ -426,11 +495,14 @@ def raspar_perfil(driver, perfil_alvo):
                     try:
                         # Pode haver múltiplos spans; juntar todos para formar o comentário
                         # pegar spans que não estão dentro de um <a> (assim evitamos repetir o username)
-                        span_comments = item.find_elements(By.XPATH, ".//span[@dir='auto' and not(ancestor::a)]")
-                        parts = [s.text.strip() for s in span_comments if s.text and s.text.strip()]
+                        span_comments = item.find_elements(
+                            By.XPATH, ".//span[@dir='auto' and not(ancestor::a)]")
+                        parts = [s.text.strip()
+                                 for s in span_comments if s.text and s.text.strip()]
                         if parts:
                             comment_text = ' '.join(parts)
                             # função de limpeza local
+
                             def clean_text(txt, user, legenda_text):
                                 if not txt:
                                     return txt
@@ -440,17 +512,23 @@ def raspar_perfil(driver, perfil_alvo):
                                     try:
                                         uname = user.strip()
                                         # remover quando aparece seguido de espaços/novas linhas
-                                        t = re.sub(r"(?i)^" + re.escape(uname) + r"[\s:-]*", "", t)
-                                        t = re.sub(r"(?i)[\s:-]*" + re.escape(uname) + r"$", "", t)
+                                        t = re.sub(
+                                            r"(?i)^" + re.escape(uname) + r"[\s:-]*", "", t)
+                                        t = re.sub(
+                                            r"(?i)[\s:-]*" + re.escape(uname) + r"$", "", t)
                                     except Exception:
                                         pass
                                 # remover tokens comuns de UI
-                                t = re.sub(r"(?i)\b(responder|respostas?|ver todas( as)?( as)?|editar|editado|reply)\b", "", t)
+                                t = re.sub(
+                                    r"(?i)\b(responder|respostas?|ver todas( as)?( as)?|editar|editado|reply)\b", "", t)
                                 # remover marcações de tempo como '3 sem', '1 h', '2d', '3w', 'ago'
-                                t = re.sub(r"\b\d+\s*(sem|h|m|d|w|mes(es)?|ano(s)?|s|min)\b", "", t)
-                                t = re.sub(r"\b(\d+)\s*curtid[ao]s?\b", "", t, flags=re.I)
+                                t = re.sub(
+                                    r"\b\d+\s*(sem|h|m|d|w|mes(es)?|ano(s)?|s|min)\b", "", t)
+                                t = re.sub(
+                                    r"\b(\d+)\s*curtid[ao]s?\b", "", t, flags=re.I)
                                 # remover palavras soltas como 'Curtir', 'Responder', 'Curtir\n'
-                                t = re.sub(r"(?i)\b(Curtir|Curtir|Curtir\n|Curtir )\b", "", t)
+                                t = re.sub(
+                                    r"(?i)\b(Curtir|Curtir|Curtir\n|Curtir )\b", "", t)
                                 # remover pontos de separação e bullets soltos
                                 t = t.replace('•', ' ')
                                 # remover múltiplas quebras de linha e espaços extras
@@ -458,7 +536,8 @@ def raspar_perfil(driver, perfil_alvo):
                                 t = re.sub(r"[ ]{2,}", " ", t)
                                 return t.strip()
 
-                            comment_text = clean_text(comment_text, username, legenda)
+                            comment_text = clean_text(
+                                comment_text, username, legenda)
                     except Exception:
                         comment_text = None
 
@@ -474,28 +553,36 @@ def raspar_perfil(driver, perfil_alvo):
                             # pular
                             continue
 
-                        lista_comentarios.append({'username': username or '', 'comment_text': comment_text})
+                        lista_comentarios.append(
+                            {'username': username or '', 'comment_text': comment_text})
                         comentarios_processados += 1  # Incrementar contador
-                        print(f"DEBUG: Comentário adicionado - {username}: {comment_text[:80]}...")
+                        print(
+                            f"DEBUG: Comentário adicionado - {username}: {comment_text[:80]}...")
                 except Exception:
                     # Ignora itens que não correspondam ao padrão esperado
                     continue
 
-            print(f'Coletados {len(lista_comentarios)} comentários para {post_url}')
+            print(
+                f'Coletados {len(lista_comentarios)} comentários para {post_url}')
 
             dados_completos.append({
                 'post_url': post_url,
                 'legenda_post': legenda,
-                'comentarios': lista_comentarios
+                'comentarios': lista_comentarios,
+                'likes': 0,
+                'comments_count': len(lista_comentarios)
             })
 
         except Exception as e:
             # Em caso de erro com um post, registra entrada com informação mínima
-            dados_completos.append({'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e)})
+            dados_completos.append(
+                {'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e)})
 
-    return dados_completos
+    return dados_completos, seguidores
 
 # Função para salvar dados em arquivo JSON
+
+
 def salvar_json(dados, nome_arquivo='dados_instagram.json'):
     """
     Salva cada post em um arquivo JSON separado, organizando por pasta de perfil.
@@ -505,8 +592,10 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
         base_dir = 'dados_instagram_por_perfil'
         os.makedirs(base_dir, exist_ok=True)
 
-        total_comentarios = sum(len(post.get('comentarios', [])) for post in dados)
-        print(f'\nDEBUG: Total de comentários a processar: {total_comentarios}')
+        total_comentarios = sum(len(post.get('comentarios', []))
+                                for post in dados)
+        print(
+            f'\nDEBUG: Total de comentários a processar: {total_comentarios}')
 
         index = []
 
@@ -534,7 +623,8 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
             comments_count = None
             if legenda:
                 # procurar padrões como '699 likes, 8 comments' (insensível a maiúsculas)
-                m = re.search(r"([\d\.,]+)\s*likes?[,;:\s]+([\d\.,]+)\s*comments?", legenda, re.I)
+                m = re.search(
+                    r"([\d\.,]+)\s*likes?[,;:\s]+([\d\.,]+)\s*comments?", legenda, re.I)
                 if m:
                     try:
                         likes = int(re.sub(r"[^0-9]", "", m.group(1)))
@@ -545,7 +635,8 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
                     except Exception:
                         comments_count = None
                     # remover essa parte da legenda
-                    legenda = re.sub(re.escape(m.group(0)), '', legenda).strip(' -:\n')
+                    legenda = re.sub(re.escape(m.group(0)),
+                                     '', legenda).strip(' -:\n')
                 else:
                     # tentar achar apenas likes ou apenas comments
                     m2 = re.search(r"([\d\.,]+)\s*likes?", legenda, re.I)
@@ -554,14 +645,17 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
                             likes = int(re.sub(r"[^0-9]", "", m2.group(1)))
                         except Exception:
                             likes = None
-                        legenda = re.sub(re.escape(m2.group(0)), '', legenda).strip(' -:\n')
+                        legenda = re.sub(re.escape(m2.group(0)),
+                                         '', legenda).strip(' -:\n')
                     m3 = re.search(r"([\d\.,]+)\s*comments?", legenda, re.I)
                     if m3:
                         try:
-                            comments_count = int(re.sub(r"[^0-9]", "", m3.group(1)))
+                            comments_count = int(
+                                re.sub(r"[^0-9]", "", m3.group(1)))
                         except Exception:
                             comments_count = None
-                        legenda = re.sub(re.escape(m3.group(0)), '', legenda).strip(' -:\n')
+                        legenda = re.sub(re.escape(m3.group(0)),
+                                         '', legenda).strip(' -:\n')
 
             # Processar comentários: tentar extrair curtidas por comentário
             comentarios = post.get('comentarios', []) or []
@@ -583,11 +677,13 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
                             if v >= 1 and v <= 100000:
                                 c_likes = v
                                 # remover do texto se era um token separado
-                                c_text = re.sub(re.escape(mlike.group(0)), '', c_text).strip()
+                                c_text = re.sub(
+                                    re.escape(mlike.group(0)), '', c_text).strip()
                         except Exception:
                             c_likes = None
 
-                comentarios_proc.append({'username': c_user, 'comment_text': c_text, 'likes': c_likes or 0})
+                comentarios_proc.append(
+                    {'username': c_user, 'comment_text': c_text, 'likes': c_likes or 0})
 
             # Montar dicionário final para o post
             post_obj = {
@@ -597,7 +693,8 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
                 'likes': likes or 0,
                 'comments_count': comments_count if comments_count is not None else len(comentarios_proc),
                 'comentarios': comentarios_proc,
-                'source_profile': perfil
+                'source_profile': perfil,
+                'seguidores': post.get('seguidores', 0)
             }
 
             # Salvar em arquivo por post
@@ -609,7 +706,8 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
             except Exception as e:
                 print(f'Erro ao salvar post {slug}: {e}')
 
-            index.append({'perfil': perfil, 'post_url': post_url, 'file': filename})
+            index.append(
+                {'perfil': perfil, 'post_url': post_url, 'file': filename})
 
         # Salvar índice geral
         try:
@@ -622,6 +720,32 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
 
     except Exception as e:
         print(f'Erro ao salvar arquivos JSON por post: {e}')
+
+
+def carregar_posts_para_ranking(base_dir='dados_instagram_por_perfil'):
+    posts = []
+
+    if not os.path.exists(base_dir):
+        return posts
+
+    for perfil in os.listdir(base_dir):
+        perfil_dir = os.path.join(base_dir, perfil)
+
+        if not os.path.isdir(perfil_dir):
+            continue
+
+        for arquivo in os.listdir(perfil_dir):
+            if arquivo.endswith('.json') and arquivo != 'index.json':
+                caminho = os.path.join(perfil_dir, arquivo)
+                try:
+                    with open(caminho, 'r', encoding='utf-8') as f:
+                        post = json.load(f)
+                        posts.append(post)
+                except Exception:
+                    pass
+
+    return posts
+
 
 if __name__ == "__main__":
     driver = create_driver(headless=False)
@@ -640,23 +764,151 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f'Não foi possível salvar cookies: {e}')
             else:
-                print('Atenção: login não confirmado. Você pode continuar manualmente no navegador aberto.')
+                print(
+                    'Atenção: login não confirmado. Você pode continuar manualmente no navegador aberto.')
 
         # 2) Raspar dados de múltiplos perfis
         all_data = []
         for perfil in PERFIS:
             print(f'\nIniciando raspagem do perfil: {perfil}')
-            dados = raspar_perfil(driver, perfil)
-            # Anotar origem do perfil em cada post
+            dados, seguidores = raspar_perfil(driver, perfil)
+            # Anotar origem do perfil em cada post + seguidores em cada post
             for post in dados:
                 post['source_profile'] = perfil
+                post['seguidores'] = seguidores
             all_data.extend(dados)
 
         # Salvar dados em JSON
         salvar_json(all_data)
 
-        # Converter em DataFrame e imprimir
-        df = pd.DataFrame(all_data)
+        # Carregar posts para ranking
+        posts_ranking = carregar_posts_para_ranking()
+        
+        # Preparar DataFrame para ranking
+        df = pd.DataFrame([
+            {
+                'source_profile': p.get('source_profile', 'unknown_profile'),
+                'post_url': p.get('post_url', ''),
+                'likes': p.get('likes', 0),
+                'comments_count': p.get('comments_count', 0),
+                'seguidores': p.get('seguidores', 0)
+            }
+        
+            for p in posts_ranking
+        ])
+
+        # Garantir que não existam NaNs
+        df[['likes', 'comments_count', 'seguidores']] = df[
+            ['likes', 'comments_count', 'seguidores']
+        ].fillna(0)
+
+        # Função para calcular Score de engajamento
+        def calcular_score(row):
+            likes = row['likes']
+            comments = row['comments_count']
+            #shares = row.get('shares', 0) não está sendo usado
+            seguidores = row['seguidores']
+
+            #Considerando que a ação de ‘curtir’ exige menor esforço cognitivo e comunicativo do que comentar, 
+            #aplicou-se um fator de normalização (0,7) aos likes, de modo a reduzir sua influência relativa em
+            #comparação aos comentários, que representam interações discursivas mais qualificadas.
+            M = (likes * 0.7) + (comments * 5) #+ (shares * 5)
+
+            # fallback defensivo
+            seguidores_validos = max(seguidores, 1)
+
+            score = (math.log(M + 1) / math.log(seguidores + 1)) * 100
+            return round(score, 2)
+        
+        # Evitar divisão por zero/seguidores zerados
+        df['seguidores'] = df['seguidores'].replace(0, 1)
+
+        # Aplicar função em cada post
+        df['score_engajamento'] = df.apply(calcular_score, axis=1)
+
+        # Diretório para salvar rankings
+        base_ranking_dir = 'rankings_instagram'
+        ranking_por_perfil_dir = os.path.join(
+            base_ranking_dir,
+            'ranking_instagram_por_perfil'
+        )
+
+        os.makedirs(ranking_por_perfil_dir, exist_ok=True)
+
+        # Ranking por perfil
+        ranking_por_perfil = {}
+
+        for perfil, grupo in df.groupby('source_profile'):
+            ranking = grupo.sort_values(
+                by='score_engajamento',
+                ascending=False
+            ).reset_index(drop=True)
+
+            # Criar coluna de posição no ranking
+            ranking['posicao'] = ranking.index + 1
+            ranking_por_perfil[perfil] = ranking
+            
+            print(f"\nRanking de posts do perfil: {perfil}")
+            print(
+                ranking[
+                    [
+                        'posicao',
+                        'post_url',
+                        'likes',
+                        'comments_count',
+                        'seguidores',
+                        'score_engajamento',
+                    ]
+                ].head(10))
+
+        # Salvar ranking separado por perfil
+        for perfil, ranking in ranking_por_perfil.items():
+            # Sanitizar nome do perfil para arquivo
+            perfil_filename = re.sub(r'[^a-zA-Z0-9_-]', '_', perfil)
+
+            filename = os.path.join(
+                ranking_por_perfil_dir,
+                f'ranking_{perfil}.csv'
+            )
+
+            ranking.head(10).to_csv(
+                filename,
+                index=False,
+                encoding='utf-8-sig'
+            )
+
+        # Criar ranking geral dos posts com base no score de engajamento
+        df_rank = df.sort_values(
+            by='score_engajamento',
+            ascending=False
+        ).reset_index(drop=True)
+
+        df_rank['posicao'] = df_rank.index + 1
+
+        tabela_final = df_rank[
+            [
+                'posicao',
+                'source_profile',
+                'post_url',
+                'likes',
+                'comments_count',
+                'seguidores',
+                'score_engajamento',
+            ]
+        ]
+
+        # Exibir os 10 primeiros posts com maior score de engajamento
+        print(tabela_final.head(10).to_string(index=False))
+
+        tabela_final.head(10).to_csv(
+            os.path.join(
+                base_ranking_dir,
+                'ranking_posts_geral.csv',
+            ),
+            index=False,
+            encoding='utf-8-sig'
+        )
+
         # Configurar pandas para mostrar todas as linhas
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
