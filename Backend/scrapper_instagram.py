@@ -22,9 +22,9 @@ import math
 # =========================
 PESO_LIKES = 0.7
 PESO_COMMENTS = 0.43
-quant_scrolagem = 3 # número de vezes que a página será rolada para carregar posts
-rolagem_comentarios = 3  # número de vezes que a página será rolada para carregar mais comentários
-total_posicoes = 3  # número de posições a exibir no ranking final
+quant_scrolagem = 1 # número de vezes que a página será rolada para carregar posts
+rolagem_comentarios = 1  # número de vezes que a página será rolada para carregar mais comentários
+total_posicoes = 2  # número de posições a exibir no ranking final
 
 # .ENV
 load_dotenv()
@@ -651,12 +651,12 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
                     {'username': c_user, 'comment_text': c_text, 'likes': c_likes or 0})
 
                 seguidores = post.get('followers', 0)
-                # try:
-                #     seguidores = int(seguidores)
-                #     if seguidores <= 0:
-                #         seguidores = 1
-                # except Exception:
-                #     seguidores = 1
+                try:
+                    seguidores = int(seguidores)
+                    if seguidores <= 0:
+                        seguidores = 1
+                except Exception:
+                    seguidores = 1
 
             # Montar dicionário final para o post
             post_obj = {
@@ -764,7 +764,7 @@ if __name__ == "__main__":
                 'post_url': p.get('post_url', ''),
                 'likes': p.get('likes', 0),
                 'comments_count': p.get('comments_count', 0),
-                'followers': seguidores,
+                'followers': p.get('followers', 1),
             }
         
             for p in posts_ranking
@@ -774,6 +774,8 @@ if __name__ == "__main__":
         df[['likes', 'comments_count', 'followers']] = df[
             ['likes', 'comments_count', 'followers']
         ].fillna(0)
+
+        # print(df[['source_profile', 'followers']].drop_duplicates())
 
         # =========================
         # CALCULO DO SCORE DE ENGAJAMENTO
@@ -868,7 +870,7 @@ if __name__ == "__main__":
             encoding='utf-8-sig'
         )
 
-        #criar arquivo JSON para frontend
+        # criar arquivo JSON para frontend
         tabela_final.head(total_posicoes).to_json(
             os.path.join(frontend_public_dir, 'ranking_posts_geral.json'),
             orient='records',
