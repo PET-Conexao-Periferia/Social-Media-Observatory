@@ -93,20 +93,15 @@ def login_instagram(driver, usuario, senha):
     try:
         wait = WebDriverWait(driver, 15)
         username_input = wait.until(
-            EC.presence_of_element_located((By.NAME, "username")))
-        password_input = driver.find_element(By.NAME, "password")
+            EC.presence_of_element_located((By.NAME, "email")))
+        password_input = driver.find_element(By.NAME, "pass")
 
         username_input.clear()
         username_input.send_keys(usuario)
         password_input.clear()
         password_input.send_keys(senha)
 
-        login_button = driver.find_element(
-            By.XPATH, "//button[@type='submit']")
-        try:
-            driver.execute_script("arguments[0].click();", login_button)
-        except Exception:
-            login_button.click()
+        password_input.send_keys(Keys.ENTER)
       
         if wait_for_login_confirmation(driver, usuario, timeout=12, poll=2):
             print('Login confirmado sem 2FA.')
