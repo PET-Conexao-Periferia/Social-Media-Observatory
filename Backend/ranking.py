@@ -26,6 +26,7 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
         {
             'source_profile': p.get('source_profile', 'unknown_profile'),
             'post_url': p.get('post_url', ''),
+            'published_at': p.get('published_at', None),
             'likes': p.get('likes', 0),
             'comments_count': p.get('comments_count', 0),
             'followers': p.get('followers', 1),
@@ -108,6 +109,7 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
             'position',
             'source_profile',
             'post_url',
+            'published_at',
             'likes',
             'comments_count',
             'followers',

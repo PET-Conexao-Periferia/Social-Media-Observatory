@@ -1,5 +1,6 @@
 import time
 import re
+from datetime import datetime, date
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -23,7 +24,63 @@ def obter_seguidores(driver):
         print(f"Erro ao obter seguidores: {e}")
         return 0
     
-def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1):
+def _parse_datetime_str(s):
+    if not s:
+        return None
+    s = s.strip()
+    # ajustar Z para offset compatível com fromisoformat
+    if s.endswith('Z'):
+        s = s[:-1] + '+00:00'
+    try:
+        return datetime.fromisoformat(s)
+    except Exception:
+        # tentar formatos sem timezone
+        for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(s.split('+')[0], fmt)
+            except Exception:
+                continue
+    return None
+
+
+def _obter_data_post(driver):
+    # Tenta meta article:published_time
+    try:
+        meta = driver.find_element(By.CSS_SELECTOR, "meta[property='article:published_time']")
+        if meta:
+            dt = meta.get_attribute('content')
+            parsed = _parse_datetime_str(dt)
+            if parsed:
+                return parsed
+    except Exception:
+        pass
+
+    # Tenta meta og:updated_time
+    try:
+        meta = driver.find_element(By.CSS_SELECTOR, "meta[property='og:updated_time']")
+        if meta:
+            dt = meta.get_attribute('content')
+            parsed = _parse_datetime_str(dt)
+            if parsed:
+                return parsed
+    except Exception:
+        pass
+
+    # Tenta encontrar <time datetime="...">
+    try:
+        time_el = driver.find_element(By.TAG_NAME, 'time')
+        if time_el:
+            dt = time_el.get_attribute('datetime') or time_el.text
+            parsed = _parse_datetime_str(dt)
+            if parsed:
+                return parsed
+    except Exception:
+        pass
+
+    return None
+
+
+def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1, start_date=None, end_date=None):
     perfil_url = f"https://www.instagram.com/{perfil_alvo}/"
     driver.get(perfil_url)
     print(f"Acessando perfil: {perfil_url}")
@@ -67,6 +124,25 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1)
         try:
             driver.get(post_url)
             time.sleep(5)
+
+            # tentar obter data de publicação do post e aplicar filtro de período
+            post_dt = None
+            try:
+                post_dt = _obter_data_post(driver)
+            except Exception:
+                post_dt = None
+
+            if (start_date or end_date):
+                if not post_dt:
+                    print(f"Data do post não encontrada para {post_url}; pulando devido ao filtro de período")
+                    continue
+                post_date = post_dt.date()
+                if start_date and post_date < start_date:
+                    print(f"Post {post_url} publicado em {post_date} é anterior ao início do período; pulando")
+                    continue
+                if end_date and post_date > end_date:
+                    print(f"Post {post_url} publicado em {post_date} é posterior ao fim do período; pulando")
+                    continue
 
             # Salva o HTML do primeiro post para inspeção local (diagnóstico)
             if idx == 0:
@@ -267,12 +343,13 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1)
                 'legenda_post': legenda,
                 'comentarios': lista_comentarios,
                 'likes': 0,
-                'comments_count': len(lista_comentarios)
+                'comments_count': len(lista_comentarios),
+                'published_at': post_dt.isoformat() if post_dt else None,
             })
 
         except Exception as e:
             # caso de erro, registra informação mínima
             dados_completos.append(
-                {'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e)})
+                {'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e), 'published_at': None})
 
     return dados_completos, seguidores

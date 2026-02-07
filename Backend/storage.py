@@ -118,6 +118,7 @@ def salvar_json(dados, nome_arquivo='dados_instagram.json'):
                 'comentarios': comentarios_proc,
                 'source_profile': perfil,
                 'followers': seguidores,
+                'published_at': post.get('published_at') if post.get('published_at') else None,
             }
 
             # Salvar em arquivo por post
