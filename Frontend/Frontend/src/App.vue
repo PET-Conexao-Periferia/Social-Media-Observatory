@@ -24,7 +24,7 @@ onMounted(async () => {
       class="h-16 ml-8 mt-3"
     />
 
-    <h1 class="text-xl font-bold text-center text-gray-700">Observatorio das Midias Sociais do Litoral Norte - PE</h1>
+    <h1 class="text-xl font-bold text-center text-gray-700">Observatório das Mídias Sociais do Litoral Norte - PE</h1>
 
     <ul class="flex gap-6 text-gray-700 font-medium mr-8">
       <li>

@@ -1,13 +1,21 @@
+# requisitos:
+# pip install selenium pandas webdriver-manager python-dotenv
+
 import os
 import re
+from datetime import datetime
 from dotenv import load_dotenv
 
 # VARIAVEIS 
 PESO_LIKES = 0.7
 PESO_COMMENTS = 0.43
-quant_scrolagem = 1 # número de vezes que a página será rolada para carregar posts
+quant_scrolagem = 3 # número de vezes que a página será rolada para carregar posts
 rolagem_comentarios = 1  # número de vezes que a página será rolada para carregar mais comentários
-total_posicoes = 2  # número de posições a exibir no ranking final
+total_posicoes = 20  # número de posições a exibir no ranking final
+
+# Período para filtrar posts (especificar aqui no formato YYYY-MM-DD ou None)
+PERIOD_START = "2026-02-01"  # exemplo: "2025-01-01" ou None
+PERIOD_END = "2026-02-07"    # exemplo: "2025-01-31" ou None
 
 from driver import create_driver
 from auth import (
@@ -81,9 +89,26 @@ def main():
 
         all_data = []
 
+        # converter strings de período para objetos date (ou None)
+        try:
+            start_date = datetime.fromisoformat(PERIOD_START).date() if PERIOD_START else None
+        except Exception:
+            start_date = None
+        try:
+            end_date = datetime.fromisoformat(PERIOD_END).date() if PERIOD_END else None
+        except Exception:
+            end_date = None
+
         for perfil in PERFIS:
             print(f"\nIniciando raspagem do perfil: {perfil}")
-            dados, seguidores = raspar_perfil(driver, perfil)
+            dados, seguidores = raspar_perfil(
+                driver,
+                perfil,
+                quant_scrolagem=quant_scrolagem,
+                rolagem_comentarios=rolagem_comentarios,
+                start_date=start_date,
+                end_date=end_date,
+            )
 
             for post in dados:
                 post["source_profile"] = perfil
