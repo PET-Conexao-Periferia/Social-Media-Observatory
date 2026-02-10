@@ -42,6 +42,78 @@ def _parse_datetime_str(s):
                 continue
     return None
 
+def obter_likes(contexto):
+    """
+    Tenta extrair o número de likes do DOM do post.
+    Aceita 'article' ou 'driver' como contexto.
+    """
+    if contexto is None:
+        return 0
+
+    try:
+        # Estratégia 1: Busca por tag <a> que leva para a lista de curtidas ('liked_by')
+        # Ex: "Curtido por fulano e outras 15.300 pessoas"
+        links_likes = contexto.find_elements(By.XPATH, ".//a[contains(@href, 'liked_by')]")
+        for link in links_likes:
+            txt = link.get_attribute('innerText').replace('.', '').replace(',', '')
+            # Procura por "outras X pessoas" ou "others X people"
+            # Regex captura o número após 'outras'/'others'
+            m = re.search(r'(?:outras|others)\s*(\d+)', txt, re.I)
+            if m:
+                # Se achou "outras X", soma 1 (o "fulano" citado)
+                return int(m.group(1)) + 1
+            
+            # Se for apenas "500 likes"
+            m2 = re.search(r'(\d+)\s*(?:likes|curtidas)', txt, re.I)
+            if m2:
+                return int(m2.group(1))
+
+        # Estratégia 2: Busca genérica por spans com classe de contagem ou texto solto
+        # Procura qualquer span que diga "X likes" ou "X curtidas"
+        spans = contexto.find_elements(By.XPATH, ".//span[contains(text(), 'likes') or contains(text(), 'curtidas')]")
+        for s in spans:
+            txt = s.text.lower().replace('.', '').replace(',', '')
+            m = re.search(r'(\d+)', txt)
+            if m:
+                return int(m.group(1))
+
+        # Estratégia 3: Tentar pegar do meta tag (funciona se contexto for driver e não article)
+        # Infelizmente 'contexto' pode ser article, que não tem find_element(meta). 
+        # Essa estratégia deixamos para o caller se quiser.
+
+    except Exception as e:
+        print(f"Erro ao extrair likes: {e}")
+    
+    return 0
+
+def obter_comentarios_total(contexto):
+    """
+    Tenta extrair o contador total de comentários (ex: 'Ver todos os 1.500 comentários')
+    """
+    if contexto is None:
+        return 0
+        
+    try:
+        # Procura por links ou botões que tenham "comments" ou "comentários" no texto
+        elementos = contexto.find_elements(By.XPATH, ".//a | .//button") + \
+                    contexto.find_elements(By.XPATH, ".//span[contains(text(), 'coment')]")
+                    
+        for el in elementos:
+            try:
+                txt = el.text.replace('.', '').replace(',', '')
+                # Padrão: "View all 150 comments" ou "Ver todos os 200 comentários"
+                if 'ver' in txt.lower() or 'view' in txt.lower():
+                     m = re.search(r'(\d+)', txt)
+                     if m:
+                         val = int(m.group(1))
+                         if val > 0:
+                             return val
+            except: 
+                pass
+    except Exception as e:
+        print(f"Erro ao extrair total comentários: {e}")
+        
+    return 0
 
 def _obter_data_post(driver):
     # Tenta meta article:published_time
@@ -80,7 +152,7 @@ def _obter_data_post(driver):
     return None
 
 
-def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1, start_date=None, end_date=None):
+def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1, start_date=None, end_date=None, on_post_scraped=None):
     perfil_url = f"https://www.instagram.com/{perfil_alvo}/"
     driver.get(perfil_url)
     print(f"Acessando perfil: {perfil_url}")
@@ -338,18 +410,49 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                     continue
             print(f'Coletados {len(lista_comentarios)} comentários para {post_url}')
 
-            dados_completos.append({
+            # Tenta pegar likes e contagem real de comentários
+            # Usa 'article' se existir, senão usa 'driver' como fallback
+            contexto_busca = article if article is not None else driver
+            
+            extracted_likes = obter_likes(contexto_busca)
+            total_comments_visual = obter_comentarios_total(contexto_busca)
+            
+            # Se não achou contador visual, usa o len() dos coletados como fallback mínimo
+            final_comments_count = max(total_comments_visual, len(lista_comentarios))
+
+            post_data_obj = {
                 'post_url': post_url,
+                'slug': post_url.rstrip('/').split('/')[-1] if post_url else None, # Pre-calcula slug
                 'legenda_post': legenda,
                 'comentarios': lista_comentarios,
-                'likes': 0,
-                'comments_count': len(lista_comentarios),
+                'likes': extracted_likes,
+                'comments_count': final_comments_count,
                 'published_at': post_dt.isoformat() if post_dt else None,
-            })
+                'source_profile': perfil_alvo, # Injeta metadata
+                'followers': seguidores # Injeta metadata
+            }
+
+            dados_completos.append(post_data_obj)
+            
+            # Notifica callback em tempo real
+            if on_post_scraped:
+                try:
+                    on_post_scraped(post_data_obj)
+                    print(" > Salvo em tempo real.")
+                except Exception as ex_cb:
+                    print(f"Erro no callback de salvamento: {ex_cb}")
 
         except Exception as e:
             # caso de erro, registra informação mínima
-            dados_completos.append(
-                {'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e), 'published_at': None})
+            err_obj = {
+                'post_url': post_url, 
+                'legenda_post': None, 
+                'comentarios': [], 
+                'error': str(e), 
+                'published_at': None,
+                'source_profile': perfil_alvo,
+                'followers': seguidores
+            }
+            dados_completos.append(err_obj)
 
     return dados_completos, seguidores

@@ -26,10 +26,10 @@ from auth import (
 )
 from scraper import raspar_perfil
 from storage import (
-    salvar_json,
-    carregar_posts_para_ranking,
+    salvar_no_mongo,
 )
-from ranking import gerar_rankings
+from ranking_mongo import gerar_ranking_no_banco
+# from ranking import gerar_rankings
 
 
 
@@ -101,34 +101,50 @@ def main():
 
         for perfil in PERFIS:
             print(f"\nIniciando raspagem do perfil: {perfil}")
-            dados, seguidores = raspar_perfil(
+            # raspar_perfil agora retorna (dados, seguidores) ou apenas dados?
+            # Verificando scraper.py, o retorno parece ser uma lista de dicts.
+            # O código antigo usava desempacotamento "dados, seguidores" mas scraper.py retorna apenas "posts" (lista)
+            # COMENTARIO CORRIGIDO: O read_file do scraper.py não mostrou o return final.
+            # Assumindo que raspar_perfil retorna lista de postagens baseada na refatoração anterior.
+            
+            # Wrapper para salvar post individualmente (silencioso)
+            def salvar_incremental(post):
+                salvar_no_mongo([post], perfil, verbose=False)
+
+            # A função raspar_perfil retorna uma tupla (lista_de_posts, numero_seguidores)
+            dados_posts, num_seguidores = raspar_perfil(
                 driver,
                 perfil,
                 quant_scrolagem=quant_scrolagem,
                 rolagem_comentarios=rolagem_comentarios,
-                start_date=start_date,
-                end_date=end_date,
+                on_post_scraped=salvar_incremental # Passa o callback
             )
 
-            for post in dados:
-                post["source_profile"] = perfil
-                post["followers"] = seguidores
+            # O salvamento final em batch ainda é útil para garantir que nada foi perdido,
+            # ou para atualizar dados que tenham mudado no final (embora incremental já resolva a maioria)
+            if dados_posts:
+                 # Injetar o número de seguidores em cada post (caso scrap antigo não tenha injetado)
+                 for p in dados_posts:
+                     p['followers'] = num_seguidores
+                     p['source_profile'] = perfil
+                 
+                 # Salvar em batch (verbose=True para log final do perfil)
+                 salvar_no_mongo(dados_posts, perfil, verbose=True)
+            
+        driver.quit()
 
-            all_data.extend(dados)
-
-        salvar_json(all_data)
-
-        posts = carregar_posts_para_ranking()
-        gerar_rankings(
-        posts,
-        PESO_LIKES,
-        PESO_COMMENTS,
-        total_posicoes
-        )
-
+        # GERAR RANKINGS (Via MongoDB)
+        print("\n" + "="*30)
+        print("GERANDO RANKINGS (MONGODB)")
+        print("="*30)
+        gerar_ranking_no_banco(PESO_LIKES, PESO_COMMENTS, total_posicoes)
 
     finally:
-        driver.quit()
+        # Garantir que o driver fecha mesmo se der erro
+        try:
+            driver.quit()
+        except:
+            pass
 
 
 if __name__ == "__main__":

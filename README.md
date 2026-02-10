@@ -1,44 +1,121 @@
-# Observatório das Mídias Sociais do Litoral Norte
+# PETri - Observatório das Mídias Sociais
 
-## 📌 Sobre
+Este projeto é uma ferramenta de analytics desenvolvida para monitorar, coletar e classificar o engajamento de perfis do Instagram. O projeto utiliza uma arquitetura moderna orientada a dados, substituindo o processamento tradicional em memória por **Pipelines de Agregação no MongoDB**.
 
-O **Observatório das Mídias Sociais do Litoral Norte** utiliza técnicas de **Inteligência Artificial**, **Recuperação de Informação** e **Ciência de Dados** para monitorar mídias sociais da região do Litoral Norte.  
-O objetivo é identificar conteúdos com alto engajamento, detectar possíveis casos de **desinformação** e apoiar a equipe do **PET – Conexão Periferia** nas nossas atividades de integridade da informação.
+## 🚀 Arquitetura
 
-A versão atual do projeto consiste em um **web scraping em Python**, responsável por coletar e ranquear informações de perfis do **Instagram** com maior engajamento da região do Litoral Norte.
+*   **Coleta (Scraper):** Python + Selenium (Extrai dados em tempo real).
+*   **Armazenamento:** MongoDB (Dockerizado).
+*   **API:** Flask (Serve os rankings processados pelo banco).
+*   **Frontend:** Vue.js + TailwindCSS (Visualização dos dados).
 
 ---
 
-## 🧰 Tecnologias utilizadas
+## 📋 Pré-requisitos
 
-- Python 3.x
-- Selenium
-- Pandas
-- WebDriver (Chrome)
+*   **Docker Desktop** (Obrigatório para o banco de dados).
+*   **Python 3.10+**.
+*   **Node.js 16+**.
+*   **Google Chrome** (Para o Selenium).
+
 ---
 
-## 📦 Dependências do projeto
+## 🛠️ Instalação e Execução
 
-Para executar o projeto, é necessário instalar as seguintes bibliotecas Python:
-```bash
-pip install selenium pandas python-dotenv
-````
----
+Para rodar o projeto completo, você precisará de **3 terminais** abertos.
 
-## ▶️ Como testar o projeto
+### Passo 1: Subir o Banco de Dados (Terminal 1)
+O banco de dados roda em um container Docker. Execute na raiz do projeto:
 
-1. Faça uma cópia do arquivo .env.exemplo e renomeie para .env:
-```bash
-cp .env.exemplo .env
+```powershell
+# Sobe o container do MongoDB em segundo plano
+docker-compose up -d
 ```
-2. Substitua as informações do arquivo .env com seus próprios dados.
+*Nota: O banco estará acessível externamente na porta **27018** para não conflitar com instalações locais do Mongo.*
 
-3. Crie um arquivo chamado perfils.txt contendo os perfis que deseja analisar (um perfil por linha).
-Utilize este método caso tenha uma lista grande de perfis.
+### Passo 2: Rodar a API Backend (Terminal 2)
+Este servidor disponibiliza os dados para o site.
 
-4. Caso queira analisar poucos perfis, você pode adicioná-los diretamente na variável PERFILS dentro do arquivo .env.
+1.  Acesse a pasta do backend:
+    ```powershell
+    cd Backend
+    ```
+2.  Instale as dependências:
+    ```powershell
+    pip install selenium pymongo python-dotenv flask flask-cors pandas
+    ```
+3.  Configure as variáveis de ambiente:
+    *   Renomeie o arquivo `.env.example` para `.env`.
+    *   Edite o `.env` e coloque seu **usuário e senha do Instagram** (necessário para o scraper).
+4.  Suba o servidor:
+    ```powershell
+    python server.py
+    ```
+    *O servidor rodará em `http://localhost:5000`.*
 
-5. Execute o script principal:
-```bash
-python scrapper_instagram.py
+### Passo 3: Rodar o Frontend (Terminal 3)
+A interface gráfica para visualizar os rankings.
+
+1.  Acesse a pasta do frontend:
+    ```powershell
+    cd Frontend/Frontend
+    ```
+2.  Instale as dependências:
+    ```powershell
+    npm install
+    ```
+3.  Rode o servidor de desenvolvimento:
+    ```powershell
+    npm run dev
+    ```
+    *Acesse o link que aparecerá (geralmente `http://localhost:5173`).*
+
+---
+
+## 🕷️ Como Coletar Dados (Rodar o Scraper)
+
+Com o **passo 1 e 2 rodando**, você pode iniciar a coleta de dados. Abra um **novo terminal** na pasta `Backend` e rode:
+
+```powershell
+cd Backend
+python main.py
 ```
+
+*   O navegador abrirá automaticamente.
+*   O sistema fará login no Instagram.
+*   Os posts serão raspados e salvos no MongoDB **em tempo real**.
+*   Se você estiver com o Frontend aberto, verá os dados aparecendo automaticamente na tabela.
+
+---
+
+## 🧹 Comandos Úteis
+
+### Limpar o Banco de Dados
+Caso os dados estejam corrompidos ou você queira iniciar uma coleta limpa, use este comando no PowerShell (na raiz do projeto):
+
+```powershell
+docker exec petri_mongo mongosh "mongodb://admin:secret@localhost:27017/petri_database?authSource=admin" --eval "db.posts.deleteMany({})"
+```
+
+### Reiniciar o Banco de Dados (Reset Total)
+Se tiver problemas de conexão ou autenticação com o Docker:
+
+```powershell
+docker-compose down -v
+docker-compose up -d
+```
+
+### Verificar Logs do Banco
+```powershell
+docker logs petri_mongo
+```
+
+---
+
+## 🧪 Estrutura de Diretórios Importantes
+
+*   `Backend/scraper.py`: Lógica de extração do Instagram (Selenium).
+*   `Backend/storage.py`: Lógica de conexão e salvamento no MongoDB.
+*   `Backend/server.py`: API Flask que executa o Aggregation Pipeline para gerar o ranking.
+*   `Backend/main.py`: Orquestrador principal da coleta.
+*   `Frontend/Frontend/src/App.vue`: Componente principal que consome a API.

@@ -4,15 +4,24 @@ import { ref, onMounted } from 'vue'
 const ranking = ref([])
 const loading = ref(true)
 
-onMounted(async () => {
+const fetchRanking = async () => {
   try {
-    const response = await fetch('/dados_ranking/ranking_posts_geral.json')
+    const response = await fetch('http://localhost:5000/ranking')
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
     ranking.value = await response.json()
   } catch (error) {
     console.error('Erro ao carregar ranking:', error)
   } finally {
     loading.value = false
   }
+}
+
+onMounted(() => {
+  fetchRanking()
+  // Atualizar a cada 5 segundos para efeito "Real Time"
+  setInterval(fetchRanking, 5000)
 })
 </script>
 
