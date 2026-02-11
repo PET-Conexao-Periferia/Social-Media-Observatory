@@ -3,11 +3,27 @@ import { ref, onMounted } from 'vue'
 
 const ranking = ref([])
 const loading = ref(true)
+const startDate = ref(null)
+const endDate = ref(null)
 
 onMounted(async () => {
   try {
     const response = await fetch('/dados_ranking/ranking_posts_geral.json')
     ranking.value = await response.json()
+
+    const published = ranking.value
+      .map((i) => i.published_at)
+      .filter(Boolean)
+      .map((s) => new Date(s))
+
+    if (published.length) {
+      const times = published.map((d) => d.getTime())
+      const min = new Date(Math.min(...times))
+      const max = new Date(Math.max(...times))
+      const fmt = (d) => d.toISOString().split('T')[0]
+      startDate.value = fmt(min)
+      endDate.value = fmt(max)
+    }
   } catch (error) {
     console.error('Erro ao carregar ranking:', error)
   } finally {
@@ -38,6 +54,14 @@ onMounted(async () => {
       Ranking de Engajamento geral
     </h2>
 
+    <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4">
+      Período: {{ startDate }} — {{ endDate }}
+    </p>
+
+    <p v-else-if="!loading" class="text-center text-gray-600 mb-4">
+      Período: -
+    </p>
+
     <p v-if="loading" class="text-center text-gray-500">
       Carregando dados...
     </p>
@@ -52,6 +76,7 @@ onMounted(async () => {
             <th class="px-4 py-3 text-left">Comentários</th>
             <th class="px-4 py-3 text-left">Seguidores</th>
             <th class="px-4 py-3 text-left">Engajamento</th>
+            <th class="px-4 py-3 text-left">Publicado</th>
             <th class="px-4 py-3 text-left">Post</th>
           </tr>
         </thead>
@@ -84,6 +109,10 @@ onMounted(async () => {
 
             <td class="px-4 py-3 font-semibold text-green-600">
               {{ item.score_engajamento.toFixed(2) }}
+            </td>
+
+            <td class="px-4 py-3">
+              {{ item.published_at ? item.published_at.split('T')[0] : '-' }}
             </td>
 
             <td class="px-4 py-3">
