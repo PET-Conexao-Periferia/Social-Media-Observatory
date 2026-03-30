@@ -7,9 +7,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # VARIAVEIS 
-PESO_LIKES = 0.7
-PESO_COMMENTS = 0.43
-quant_scrolagem = 3 # número de vezes que a página será rolada para carregar posts
+PESO_LIKES = 1.4
+PESO_COMMENTS = 8.6
+quant_scrolagem = 5 # número de vezes que a página será rolada para carregar posts
 rolagem_comentarios = 1  # número de vezes que a página será rolada para carregar mais comentários
 total_posicoes = 20  # número de posições a exibir no ranking final
 
