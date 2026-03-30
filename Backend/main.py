@@ -11,7 +11,7 @@ PESO_LIKES = 1.4
 PESO_COMMENTS = 8.6
 quant_scrolagem = 5 # número de vezes que a página será rolada para carregar posts
 rolagem_comentarios = 1  # número de vezes que a página será rolada para carregar mais comentários
-total_posicoes = 20  # número de posições a exibir no ranking final
+total_posicoes = 5  # número de posições a exibir no ranking final
 
 # Período para filtrar posts (especificar aqui no formato YYYY-MM-DD ou None)
 PERIOD_START = "2026-02-01"  # exemplo: "2025-01-01" ou None
@@ -67,7 +67,7 @@ except Exception as e:
 
 
 def main():
-    driver = create_driver(headless=False)
+    driver = create_driver(headless=True)  #headless=False para rodar com a janela do navegador
 
     try:
         loaded = carregar_cookies(driver)
