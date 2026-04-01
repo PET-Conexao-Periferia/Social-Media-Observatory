@@ -4,19 +4,42 @@ from datetime import datetime, date
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+import re
 
 def obter_seguidores(driver):
     try:
         elem = driver.find_element(
             By.XPATH,
-            "//span[@title and contains(@title, '.')]"
+            "//header//span[contains(., 'followers') or contains(., 'seguidores')]"
         )
-        texto = elem.get_attribute("title")
+        texto = elem.text
 
         if not texto:
             return 0
         
+        texto = texto.lower().replace('followers', '').replace('seguidores', '').strip()
+
+        # Trata "mil" (pt-BR)
+        if 'mil' in texto:
+            numero = texto.replace('mil', '').replace(',', '.').strip()
+            return int(float(numero) * 1000)
+
+        # Trata "mi" (milhões pt-BR)
+        if 'mi' in texto:
+            numero = texto.replace('mi', '').replace(',', '.').strip()
+            return int(float(numero) * 1_000_000)
+
+        # Trata "k"
+        if texto.endswith('k'):
+            numero = texto[:-1].replace(',', '.').strip()
+            return int(float(numero) * 1000)
+
+        # Trata "m" (milhões)
+        if texto.endswith('m'):
+            numero = texto[:-1].replace(',', '.').strip()
+            return int(float(numero) * 1_000_000)
+        
+        # Número simples
         texto = texto.replace('.', '').replace(',', '').strip()
         return int(texto)
 

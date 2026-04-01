@@ -4,6 +4,8 @@ from selenium.webdriver.chrome.options import Options
 
 
 def create_driver(headless=True): #headless=False para rodar com a janela do navegador
+    options = Options()
+
     if headless:
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1920,1080")
