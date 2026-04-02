@@ -55,7 +55,7 @@ onMounted(async () => {
     </h2>
 
     <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4">
-      Período: {{ startDate }} — {{ endDate }}
+      Período: {{ new Date(startDate).toLocaleDateString('pt-BR') }} — {{ new Date(endDate).toLocaleDateString('pt-BR') }}
     </p>
 
     <p v-else-if="!loading" class="text-center text-gray-600 mb-4">
@@ -72,12 +72,12 @@ onMounted(async () => {
           <tr>
             <th class="px-4 py-3 text-left"></th>
             <th class="px-4 py-3 text-left">Perfil</th>
-            <th class="px-4 py-3 text-left">Likes</th>
+            <th class="px-4 py-3 text-left">Curtidas</th>
             <th class="px-4 py-3 text-left">Comentários</th>
             <th class="px-4 py-3 text-left">Seguidores</th>
             <th class="px-4 py-3 text-left">Engajamento</th>
-            <th class="px-4 py-3 text-left">Publicado</th>
-            <th class="px-4 py-3 text-left">Post</th>
+            <th class="px-4 py-3 text-left">Data</th>
+            <th class="px-4 py-3 text-left">Publicação</th>
           </tr>
         </thead>
 
@@ -104,7 +104,7 @@ onMounted(async () => {
             </td>
 
             <td class="px-4 py-3">
-              {{ item.followers }}
+              {{ Number(item.followers).toLocaleString('pt-BR') }}
             </td>
 
             <td class="px-4 py-3 font-semibold text-green-600">
@@ -112,7 +112,7 @@ onMounted(async () => {
             </td>
 
             <td class="px-4 py-3">
-              {{ item.published_at ? item.published_at.split('T')[0] : '-' }}
+              {{ item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR') : '-' }}
             </td>
 
             <td class="px-4 py-3">
@@ -121,7 +121,7 @@ onMounted(async () => {
                 target="_blank"
                 class="text-blue-500 hover:underline font-medium"
               >
-                Ver Post
+                Ver Publicação
               </a>
             </td>
           </tr>
