@@ -5,6 +5,11 @@ const ranking = ref([])
 const loading = ref(true)
 const startDate = ref(null)
 const endDate = ref(null)
+const expanded = ref({})
+
+const toggleExpand = (index) => {
+  expanded.value[index] = !expanded.value[index]
+}
 
 onMounted(async () => {
   try {
@@ -34,13 +39,15 @@ onMounted(async () => {
 
 <template>
   <nav class="w-full bg-white shadow-md px-6 py-4 flex items-center justify-between">
-      <img
+    <img
       src="@/assets/logo-pet-horizontal.svg"
       alt="Logo"
       class="h-16 ml-8 mt-3"
     />
 
-    <h1 class="text-xl font-bold text-center text-gray-700">Observatório das Mídias Sociais do Litoral Norte - PE</h1>
+    <h1 class="text-xl font-bold text-center text-gray-700">
+      Observatório das Mídias Sociais do Litoral Norte - PE
+    </h1>
 
     <ul class="flex gap-6 text-gray-700 font-medium mr-8">
       <li>
@@ -77,13 +84,14 @@ onMounted(async () => {
             <th class="px-4 py-3 text-left">Seguidores</th>
             <th class="px-4 py-3 text-left">Engajamento</th>
             <th class="px-4 py-3 text-left">Data</th>
+            <!-- <th class="px-4 py-3 text-left">Legenda</th> -->
             <th class="px-4 py-3 text-left">Publicação</th>
           </tr>
         </thead>
 
         <tbody class="divide-y divide-gray-200">
           <tr
-            v-for="item in ranking"
+            v-for="(item, index) in ranking"
             :key="item.source_profile"
             class="hover:bg-gray-50 transition"
           >
@@ -114,6 +122,24 @@ onMounted(async () => {
             <td class="px-4 py-3">
               {{ item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR') : '-' }}
             </td>
+
+            <!-- <td class="px-4 py-3 max-w-lg">
+            <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line break-words">
+              {{
+                expanded[index]
+                  ? item.legenda_post
+                  : item.legenda_resumo
+              }}
+            </div>
+
+            <button
+              v-if="item.legenda_post && item.legenda_post !== item.legenda_resumo"
+              @click="toggleExpand(index)"
+              class="mt-1 text-blue-500 hover:underline text-xs font-medium"
+            >
+              {{ expanded[index] ? 'ver menos' : 'ver mais' }}
+            </button>
+          </td> -->
 
             <td class="px-4 py-3">
               <a

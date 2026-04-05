@@ -16,6 +16,14 @@ def calcular_score(row, peso_likes, peso_comments):
     score = (math.log(M + 1) / math.log(seguidores_validos + 1)) * 100
     return round(score, 2)
 
+def gerar_resumo_legenda(texto, limite=50):
+    if not texto:
+        return ''
+    palavras = texto.split()
+    if len(palavras) <= limite:
+        return texto
+    return ' '.join(palavras[:limite]) + '...'
+
 
 def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
     if not posts:
@@ -27,6 +35,7 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
             'source_profile': p.get('source_profile', 'unknown_profile'),
             'post_url': p.get('post_url', ''),
             'published_at': p.get('published_at', None),
+            'legenda_post': p.get('legenda_post', ''),
             'likes': p.get('likes', 0),
             'comments_count': p.get('comments_count', 0),
             'followers': p.get('followers', 1),
@@ -39,6 +48,10 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
     ].fillna(0)
 
     df['followers'] = df['followers'].replace(0, 1)
+
+
+    df['legenda_resumo'] = df['legenda_post'].apply(gerar_resumo_legenda)
+
 
     df['score_engajamento'] = df.apply(
         calcular_score,
@@ -110,6 +123,8 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
             'source_profile',
             'post_url',
             'published_at',
+            'legenda_post',
+            'legenda_resumo',
             'likes',
             'comments_count',
             'followers',
