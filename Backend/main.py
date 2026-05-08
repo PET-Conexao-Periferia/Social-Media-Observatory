@@ -9,13 +9,13 @@ from dotenv import load_dotenv
 # VARIAVEIS 
 PESO_LIKES = 1.4
 PESO_COMMENTS = 8.6
-quant_scrolagem = 5 # número de vezes que a página será rolada para carregar posts
-rolagem_comentarios = 1  # número de vezes que a página será rolada para carregar mais comentários
-total_posicoes = 5  # número de posições a exibir no ranking final
+quant_scrolagem = int(os.getenv("QUANT_SCROLAGEM", 1))
+rolagem_comentarios = int(os.getenv("ROLAGEM_COMENTARIOS", 1))
+total_posicoes = int(os.getenv("TOTAL_POSICOES", 5))
 
-# Período para filtrar posts (especificar aqui no formato YYYY-MM-DD ou None)
-PERIOD_START = "2026-02-01"  # exemplo: "2025-01-01" ou None
-PERIOD_END = "2026-02-07"    # exemplo: "2025-01-31" ou None
+# Período para filtrar posts 
+PERIOD_START = os.getenv("PERIOD_START")
+PERIOD_END = os.getenv("PERIOD_END")
 
 from driver import create_driver
 from auth import (

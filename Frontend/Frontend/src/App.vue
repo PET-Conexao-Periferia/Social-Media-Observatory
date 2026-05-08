@@ -5,6 +5,11 @@ const ranking = ref([])
 const loading = ref(true)
 const startDate = ref(null)
 const endDate = ref(null)
+const expanded = ref({})
+
+const toggleExpand = (index) => {
+  expanded.value[index] = !expanded.value[index]
+}
 
 onMounted(async () => {
   try {
@@ -30,17 +35,57 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+const formatLegenda = (texto, limite = 150) => {
+  if (!texto) return '-'
+
+  let resultado = texto
+
+  if (resultado.includes(':')) {
+    resultado = resultado.split(':').slice(1).join(':').trim()
+  }
+
+  const match = resultado.match(/["“](.*?)["”]/)
+
+  if (match) {
+    resultado = match[1]
+  }
+
+  resultado = resultado.replace(/\n/g, ' ')
+
+  if (resultado.length > limite) {
+    resultado = resultado.substring(0, limite) + '...'
+  }
+
+  return resultado
+}
+
+const getLegendaCompleta = (texto) => {
+  if (!texto) return '-'
+
+  let resultado = texto
+
+  if (resultado.includes(':')) {
+    resultado = resultado.split(':').slice(1).join(':').trim()
+  }
+
+  const match = resultado.match(/["“](.*?)["”]/)
+
+  if (match) {
+    resultado = match[1]
+  }
+
+  return resultado.replace(/\n/g, ' ')
+}
 </script>
 
 <template>
   <nav class="w-full bg-white shadow-md px-6 py-4 flex items-center justify-between">
-      <img
-      src="@/assets/logo-pet-horizontal.svg"
-      alt="Logo"
-      class="h-16 ml-8 mt-3"
-    />
+    <img src="@/assets/logo-pet-horizontal.svg" alt="Logo" class="h-16 ml-8 mt-3" />
 
-    <h1 class="text-xl font-bold text-center text-gray-700">Observatório das Mídias Sociais do Litoral Norte - PE</h1>
+    <h1 class="text-xl font-bold text-center text-gray-700">
+      Observatório das Mídias Sociais do Litoral Norte - PE
+    </h1>
 
     <ul class="flex gap-6 text-gray-700 font-medium mr-8">
       <li>
@@ -49,13 +94,14 @@ onMounted(async () => {
     </ul>
   </nav>
 
-  <div class="max-w-5xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
+  <div class="max-w-7xl mx-auto mt-10 p-4 bg-white rounded-xl shadow-lg">
     <h2 class="text-2xl font-medium text-center text-gray-800 mb-8">
       Ranking de Engajamento geral
     </h2>
 
     <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4">
-      Período: {{ startDate }} — {{ endDate }}
+      Período: {{ new Date(startDate).toLocaleDateString('pt-BR') }} — {{ new Date(endDate).toLocaleDateString('pt-BR')
+      }}
     </p>
 
     <p v-else-if="!loading" class="text-center text-gray-600 mb-4">
@@ -72,21 +118,18 @@ onMounted(async () => {
           <tr>
             <th class="px-4 py-3 text-left"></th>
             <th class="px-4 py-3 text-left">Perfil</th>
-            <th class="px-4 py-3 text-left">Likes</th>
+            <th class="px-4 py-3 text-left">Curtidas</th>
             <th class="px-4 py-3 text-left">Comentários</th>
             <th class="px-4 py-3 text-left">Seguidores</th>
             <th class="px-4 py-3 text-left">Engajamento</th>
-            <th class="px-4 py-3 text-left">Publicado</th>
+            <th class="px-4 py-3 text-left">Data</th>
+            <th class="px-4 py-3 text-left">Legenda</th>
             <th class="px-4 py-3 text-left">Post</th>
           </tr>
         </thead>
 
         <tbody class="divide-y divide-gray-200">
-          <tr
-            v-for="item in ranking"
-            :key="item.source_profile"
-            class="hover:bg-gray-50 transition"
-          >
+          <tr v-for="(item, index) in ranking" :key="item.source_profile" class="hover:bg-gray-50 transition">
             <td class="px-4 py-3 font-semibold text-gray-600">
               {{ item.position }}
             </td>
@@ -104,7 +147,7 @@ onMounted(async () => {
             </td>
 
             <td class="px-4 py-3">
-              {{ item.followers }}
+              {{ Number(item.followers).toLocaleString('pt-BR') }}
             </td>
 
             <td class="px-4 py-3 font-semibold text-green-600">
@@ -112,15 +155,28 @@ onMounted(async () => {
             </td>
 
             <td class="px-4 py-3">
-              {{ item.published_at ? item.published_at.split('T')[0] : '-' }}
+              {{ item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR') : '-' }}
             </td>
 
-            <td class="px-4 py-3">
-              <a
-                :href="item.post_url"
-                target="_blank"
-                class="text-blue-500 hover:underline font-medium"
-              >
+            <td class="px-4 py-3 max-w-lg">
+              <div class="text-sm text-gray-700 max-w-xs" :class="expanded[index]
+                ? 'whitespace-normal'
+                : 'whitespace-nowrap overflow-hidden text-ellipsis'">
+                {{
+                  expanded[index]
+                    ? getLegendaCompleta(item.legenda_post)
+                    : formatLegenda(item.legenda_post, 150)
+                }}
+              </div>
+
+              <button v-if="getLegendaCompleta(item.legenda_post).length > 150" @click="toggleExpand(index)"
+                class="mt-1 text-blue-500 hover:underline text-xs font-medium">
+                {{ expanded[index] ? 'ver menos' : 'ver mais' }}
+              </button>
+            </td>
+
+            <td class="px-4 py-3 whitespace-nowrap">
+              <a :href="item.post_url" target="_blank" class="text-blue-500 hover:underline font-medium">
                 Ver Post
               </a>
             </td>
