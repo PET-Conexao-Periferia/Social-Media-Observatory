@@ -116,7 +116,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
     for i in range(quant_scrolagem): 
         driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(2)  
+        time.sleep(5)  
         print(f"Rolagem {i+1}/{quant_scrolagem} completada")
 
     # Encontrar todos os links de posts que levam para '/p/' e coletar URLs únicas
@@ -255,7 +255,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                                     except Exception:
                                         pass
                                 clicked = True
-                                time.sleep(2)
+                                time.sleep(4)
                         except Exception:
                             continue
 
@@ -268,7 +268,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
             for _ in range(rolagem_comentarios):
                 driver.execute_script(
                     "window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2)
+                time.sleep(4)
 
             # Encontrar elementos que representem comentários
             comment_items = []

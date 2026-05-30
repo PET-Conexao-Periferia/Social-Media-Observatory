@@ -1,5 +1,6 @@
-# requisitos:
-# pip install selenium pandas webdriver-manager python-dotenv
+# requisitos: pip install selenium pandas webdriver-manager python-dotenv
+
+# importante: se quiser rodar com a janela do navegador, certifique-se de que headless=False nos arquivos main.py e driver.py nas linhas 71 e 6, respectivamente. Por padrão, roda sem a janela.
 
 import os
 import re
@@ -9,13 +10,13 @@ from dotenv import load_dotenv
 # VARIAVEIS 
 PESO_LIKES = 1.4
 PESO_COMMENTS = 8.6
-quant_scrolagem = int(os.getenv("QUANT_SCROLAGEM", 1))
-rolagem_comentarios = int(os.getenv("ROLAGEM_COMENTARIOS", 1))
-total_posicoes = int(os.getenv("TOTAL_POSICOES", 5))
+quant_scrolagem =  3 #quanto maior o número, mais antigo será o post
+rolagem_comentarios = 1
+total_posicoes = 10 #número de posições a exibir no ranking final
 
 # Período para filtrar posts 
-PERIOD_START = os.getenv("PERIOD_START")
-PERIOD_END = os.getenv("PERIOD_END")
+PERIOD_START = "2025-11-01"    # exemplo: "2025-01-01" ou None
+PERIOD_END = "2026-05-31"
 
 from driver import create_driver
 from auth import (
