@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import re
+from storage import salvar_post_json
 
 def obter_seguidores(driver):
     try:
@@ -116,7 +117,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
     for i in range(quant_scrolagem): 
         driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(2)  
+        time.sleep(5)  
         print(f"Rolagem {i+1}/{quant_scrolagem} completada")
 
     # Encontrar todos os links de posts que levam para '/p/' e coletar URLs únicas
@@ -255,7 +256,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                                     except Exception:
                                         pass
                                 clicked = True
-                                time.sleep(2)
+                                time.sleep(4)
                         except Exception:
                             continue
 
@@ -268,7 +269,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
             for _ in range(rolagem_comentarios):
                 driver.execute_script(
                     "window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2)
+                time.sleep(4)
 
             # Encontrar elementos que representem comentários
             comment_items = []
@@ -361,18 +362,35 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                     continue
             print(f'Coletados {len(lista_comentarios)} comentários para {post_url}')
 
-            dados_completos.append({
+            post_data = {
                 'post_url': post_url,
                 'legenda_post': legenda,
                 'comentarios': lista_comentarios,
                 'likes': 0,
                 'comments_count': len(lista_comentarios),
                 'published_at': post_dt.isoformat() if post_dt else None,
-            })
+                'source_profile': perfil_alvo,
+                'followers': seguidores,
+            }
+
+            salvar_post_json(post_data)
+
+            dados_completos.append(post_data)
 
         except Exception as e:
             # caso de erro, registra informação mínima
-            dados_completos.append(
-                {'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e), 'published_at': None})
+            post_data = {
+                'post_url': post_url,
+                'legenda_post': None,
+                'comentarios': [],
+                'error': str(e),
+                'published_at': None,
+                'source_profile': perfil_alvo,
+                'followers': seguidores,
+            }
+
+            salvar_post_json(post_data)
+
+            dados_completos.append(post_data)
 
     return dados_completos, seguidores
