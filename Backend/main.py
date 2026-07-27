@@ -10,26 +10,26 @@ from dotenv import load_dotenv
 # VARIAVEIS 
 PESO_LIKES = 1.4
 PESO_COMMENTS = 8.6
-quant_scrolagem =  3 #quanto maior o número, mais antigo será o post
-rolagem_comentarios = 3
+quant_scrolagem =  1 #quanto maior o número, mais antigo será o post
+rolagem_comentarios = 1
 total_posicoes = 10 #número de posições a exibir no ranking final
 
 # Período para filtrar posts 
-PERIOD_START = "2025-11-01"    # exemplo: "2025-01-01" ou None
-PERIOD_END = "2026-05-31"
+PERIOD_START = "2000-01-01"    # exemplo: "2025-01-01" ou None
+PERIOD_END = "2026-12-31"
 
-from driver import create_driver
-from auth import (
+from Backend.Services.Browser.driver_service import create_driver
+from Backend.Services.Auth.auth_service import (
     carregar_cookies,
     salvar_cookies,
     is_logged_in,
     login_instagram,
 )
-from scraper import raspar_perfil
-from storage import (
+from Backend.Services.Collector.scraper_service import raspar_perfil
+from Backend.Services.Storage.storage_service import (
     carregar_posts_para_ranking,
 )
-from ranking import gerar_rankings
+from Backend.Services.Ranking.ranking_service import gerar_rankings
 
 
 
@@ -67,7 +67,7 @@ except Exception as e:
 
 
 def main():
-    driver = create_driver(headless=True)  #headless=False para rodar com a janela do navegador
+    driver = create_driver(headless=False)  #headless=False para rodar com a janela do navegador
 
     try:
         loaded = carregar_cookies(driver)

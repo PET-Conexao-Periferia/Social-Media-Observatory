@@ -3,7 +3,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
 
-def create_driver(headless=True): #headless=False para rodar com a janela do navegador
+def create_driver(headless=False): #headless=False para rodar com a janela do navegador
     options = Options()
 
     if headless:

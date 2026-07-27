@@ -4,8 +4,8 @@ from datetime import datetime, date
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import re
-from storage import salvar_post_json
+from Backend.Config.paths import DEBUG_POST_FILE
+from Backend.Services.Storage.storage_service import salvar_post_json
 
 def obter_seguidores(driver):
     try:
@@ -171,7 +171,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
             # Salva o HTML do primeiro post para inspeção local (diagnóstico)
             if idx == 0:
                 try:
-                    with open('debug_post.html', 'w', encoding='utf-8') as f:
+                    with open(DEBUG_POST_FILE, "w", encoding="utf-8") as f:
                         f.write(driver.page_source)
                 except Exception as e:
                     print(f'Falha ao salvar debug_post.html: {e}')

@@ -1,7 +1,11 @@
-import os
 import re
 import math
 import pandas as pd
+from Backend.Config.paths import (
+    RANKINGS_DIR,
+    RANKING_BY_PROFILE_DIR,
+    FRONTEND_RANKING_DIR,
+)
 
 
 def calcular_score(row, peso_likes, peso_comments):
@@ -59,21 +63,9 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
         args=(PESO_LIKES, PESO_COMMENTS)
     )
 
-    base_ranking_dir = 'rankings_geral'
-    ranking_por_perfil_dir = os.path.join(
-        base_ranking_dir,
-        'ranking_por_perfil'
-    )
-    os.makedirs(ranking_por_perfil_dir, exist_ok=True)
-
-    frontend_public_dir = os.path.join(
-        '..',
-        'Frontend',
-        'Frontend',
-        'public',
-        'dados_ranking'
-    )
-    os.makedirs(frontend_public_dir, exist_ok=True)
+    RANKINGS_DIR.mkdir(parents=True, exist_ok=True)
+    RANKING_BY_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    FRONTEND_RANKING_DIR.mkdir(parents=True, exist_ok=True)
 
     ranking_por_perfil = {}
 
@@ -89,9 +81,9 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
     for perfil, ranking in ranking_por_perfil.items():
         perfil_filename = re.sub(r'[^a-zA-Z0-9_-]', '_', perfil)
 
-        csv_path = os.path.join(
-            ranking_por_perfil_dir,
-            f'ranking_{perfil_filename}.csv'
+        csv_path = (
+           RANKING_BY_PROFILE_DIR
+            / f"ranking_{perfil_filename}.csv"
         )
         ranking.head(total_posicoes).to_csv(
             csv_path,
@@ -99,9 +91,9 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
             encoding='utf-8-sig'
         )
 
-        json_path = os.path.join(
-            frontend_public_dir,
-            f'ranking_{perfil_filename}.json'
+        json_path = (
+            FRONTEND_RANKING_DIR
+            / f"ranking_{perfil_filename}.json"
         )
         ranking.head(10).to_json(
             json_path,
@@ -135,19 +127,13 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
     print(tabela_final.head(total_posicoes).to_string(index=False))
 
     tabela_final.head(total_posicoes).to_csv(
-        os.path.join(
-            base_ranking_dir,
-            'ranking_posts_geral.csv',
-        ),
+    RANKINGS_DIR / "ranking_posts_geral.csv",
         index=False,
         encoding='utf-8-sig'
     )
 
     tabela_final.head(total_posicoes).to_json(
-        os.path.join(
-            frontend_public_dir,
-            'ranking_posts_geral.json'
-        ),
+        FRONTEND_RANKING_DIR / "ranking_posts_geral.json",
         orient='records',
         force_ascii=False,
         indent=2

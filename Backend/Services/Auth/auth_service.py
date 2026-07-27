@@ -1,13 +1,12 @@
-import os
 import json
 import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from Backend.Config.paths import COOKIES_FILE
 
-
-def salvar_cookies(driver, caminho='cookies_instagram.json'):
+def salvar_cookies(driver, caminho=COOKIES_FILE):
     try:
         cookies = driver.get_cookies()
         with open(caminho, 'w', encoding='utf-8') as f:
@@ -15,8 +14,8 @@ def salvar_cookies(driver, caminho='cookies_instagram.json'):
     except Exception as e:
         print(f'Falha ao salvar cookies: {e}')
         
-def carregar_cookies(driver, caminho='cookies_instagram.json'):
-    if not os.path.exists(caminho):
+def carregar_cookies(driver, caminho=COOKIES_FILE):
+    if not caminho.exists():
         return False
     try:
         driver.get('https://www.instagram.com/')

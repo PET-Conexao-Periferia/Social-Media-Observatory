@@ -1,0 +1,37 @@
+# Variáveis de ambiente
+.env
+.env.*
+
+# Ambiente virtual Python
+venv/
+Backend/venv/
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos gerados
+debug_post.html
+dados_instagram.json
+cookies_instagram.json
+perfis.txt
+
+# Pastas de saída
+dados_por_perfil/
+rankings_geral/
+
+
+# VS Code
+.vscode/
+Frontend/.vscode/
+
+# Arquivos gerados pelo Frontend
+Frontend/public/
+
+# Logs
+*.log
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db

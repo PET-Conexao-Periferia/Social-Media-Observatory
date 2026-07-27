@@ -1,19 +1,17 @@
-import os
 import json
 import time
 import re
-
+from Backend.Config.paths import PROFILES_DIR
 
 def salvar_post_json(post):
 
     try:
-        base_dir = "dados_por_perfil"
-        os.makedirs(base_dir, exist_ok=True)
+        PROFILES_DIR.mkdir(parents=True, exist_ok=True)
 
         perfil = post.get("source_profile") or "unknown_profile"
 
-        perfil_dir = os.path.join(base_dir, perfil)
-        os.makedirs(perfil_dir, exist_ok=True)
+        perfil_dir = PROFILES_DIR / perfil
+        perfil_dir.mkdir(parents=True, exist_ok=True)
 
         post_url = post.get("post_url") or ""
 
@@ -148,10 +146,8 @@ def salvar_post_json(post):
             "error": post.get("error")
         }
 
-        filename = os.path.join(
-            perfil_dir,
-            f"{slug}.json"
-        )
+        filename = perfil_dir / f"{slug}.json"
+        
 
         with open(
             filename,
@@ -182,14 +178,9 @@ def atualizar_index(perfil, post_url, filename):
 
     try:
 
-        base_dir = "dados_por_perfil"
+        idx_file = PROFILES_DIR / "index.json"
 
-        idx_file = os.path.join(
-            base_dir,
-            "index.json"
-        )
-
-        if os.path.exists(idx_file):
+        if idx_file.exists():
 
             with open(
                 idx_file,
@@ -208,7 +199,7 @@ def atualizar_index(perfil, post_url, filename):
         novo_item = {
             "perfil": perfil,
             "post_url": post_url,
-            "file": filename
+            "file":str(filename) 
         }
 
         ja_existe = any(
@@ -243,40 +234,29 @@ def salvar_json(dados):
         salvar_post_json(post)
 
 
-def carregar_posts_para_ranking(
-    base_dir="dados_por_perfil"
-):
+def carregar_posts_para_ranking(base_dir=PROFILES_DIR):
     posts = []
 
-    if not os.path.exists(base_dir):
+    if not base_dir.exists():
         return posts
 
-    for perfil in os.listdir(base_dir):
+    for perfil_dir in base_dir.iterdir():
 
-        perfil_dir = os.path.join(
-            base_dir,
-            perfil
-        )
 
-        if not os.path.isdir(perfil_dir):
+        if not perfil_dir.is_dir():
             continue
 
-        for arquivo in os.listdir(perfil_dir):
+        for arquivo in perfil_dir.iterdir():
 
             if (
-                arquivo.endswith(".json")
-                and arquivo != "index.json"
+                    arquivo.suffix == ".json"
+                    and arquivo.name != "index.json"
             ):
-
-                caminho = os.path.join(
-                    perfil_dir,
-                    arquivo
-                )
 
                 try:
 
                     with open(
-                        caminho,
+                        arquivo,
                         "r",
                         encoding="utf-8"
                     ) as f:
@@ -287,7 +267,7 @@ def carregar_posts_para_ranking(
 
                 except Exception as e:
                     print(
-                        f"Erro ao ler {caminho}: {e}"
+                        f"Erro ao ler {arquivo}: {e}"
                     )
 
     return posts
