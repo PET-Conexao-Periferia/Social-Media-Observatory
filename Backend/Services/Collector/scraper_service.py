@@ -120,7 +120,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
         time.sleep(5)  
         print(f"Rolagem {i+1}/{quant_scrolagem} completada")
 
-    # Encontrar todos os links de posts que levam para '/p/' e coletar URLs únicas
+    # Encontrar todos os links de posts 
     try:
         wait = WebDriverWait(driver, 10) #pesquisar
         anchors = wait.until(
@@ -135,7 +135,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
 
     for a in anchors:
         href = a.get_attribute('href')
-        if href and '/p/' in href:
+        if href and any(x in href for x in ('/p/', '/reel/')):
             if href in seen_set:
                 continue
             seen_set.add(href)

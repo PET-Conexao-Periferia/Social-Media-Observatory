@@ -3,8 +3,7 @@
 # importante: se quiser rodar com a janela do navegador, certifique-se de que headless=False nos arquivos main.py e driver.py nas linhas 71 e 6, respectivamente. Por padrão, roda sem a janela.
 
 import os
-import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 # VARIAVEIS 
@@ -15,8 +14,12 @@ rolagem_comentarios = 1
 total_posicoes = 10 #número de posições a exibir no ranking final
 
 # Período para filtrar posts 
-PERIOD_START = "2000-01-01"    # exemplo: "2025-01-01" ou None
-PERIOD_END = "2026-12-31"
+
+USE_LAST_DAYS = True      # True = ignora PERIOD_START e PERIOD_END
+LAST_DAYS = 7
+
+PERIOD_START = "2025-11-01"    # exemplo: "2025-01-01" ou None
+PERIOD_END = "2026-05-31"
 
 from Backend.Services.Browser.driver_service import create_driver
 from Backend.Services.Auth.auth_service import (
@@ -67,7 +70,7 @@ except Exception as e:
 
 
 def main():
-    driver = create_driver(headless=False)  #headless=False para rodar com a janela do navegador
+    driver = create_driver(headless=True)  #headless=True para rodar sem a janela do navegador
 
     try:
         loaded = carregar_cookies(driver)
@@ -89,14 +92,27 @@ def main():
 
 
         # converter strings de período para objetos date (ou None)
-        try:
-            start_date = datetime.fromisoformat(PERIOD_START).date() if PERIOD_START else None
-        except Exception:
-            start_date = None
-        try:
-            end_date = datetime.fromisoformat(PERIOD_END).date() if PERIOD_END else None
-        except Exception:
-            end_date = None
+        if USE_LAST_DAYS:
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=LAST_DAYS)
+        else:
+            try:
+                start_date = (
+                    datetime.fromisoformat(PERIOD_START).date()
+                    if PERIOD_START
+                    else None
+                )
+            except Exception:
+                start_date = None
+
+            try:
+                end_date = (
+                    datetime.fromisoformat(PERIOD_END).date()
+                    if PERIOD_END
+                    else None
+                )
+            except Exception:
+                end_date = None
 
         for perfil in PERFIS:
             print(f"\nIniciando raspagem do perfil: {perfil}")
