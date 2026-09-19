@@ -48,6 +48,31 @@ def obter_seguidores(driver):
         print(f"Erro ao obter seguidores: {e}")
         return 0
     
+def obter_metricas_post(driver):
+    try:
+        likes = WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((
+                By.XPATH,
+                "//main/div/div[1]/div/div[2]/div/div[3]/section/div[1]/span[2]"
+            ))
+        ).text
+
+        comments = driver.find_element(
+            By.XPATH,
+            "//main/div/div[1]/div/div[2]/div/div[3]/section/div[1]/span[4]"
+        ).text
+
+        reposts = driver.find_element(
+            By.XPATH,
+            "//main/div/div[1]/div/div[2]/div/div[3]/section/div[1]/span[5]"
+        ).text
+
+        return likes, comments, reposts
+
+    except Exception as e:
+        print(f"Erro ao obter métricas do post: {e}")
+        return 0, 0, 0
+    
 def _parse_datetime_str(s):
     if not s:
         return None
@@ -167,6 +192,11 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                 if end_date and post_date > end_date:
                     print(f"Post {post_url} publicado em {post_date} é posterior ao fim do período; pulando")
                     continue
+
+            likes, comments_count, reposts = obter_metricas_post(driver)
+            print(f"Curtidas: {likes}")
+            print(f"Comentários: {comments_count}")
+            print(f"Reposts: {reposts}")
 
             # Salva o HTML do primeiro post para inspeção local (diagnóstico)
             if idx == 0:
@@ -366,8 +396,9 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                 'post_url': post_url,
                 'legenda_post': legenda,
                 'comentarios': lista_comentarios,
-                'likes': 0,
+                'likes': likes,
                 'comments_count': len(lista_comentarios),
+                 'reposts': reposts,
                 'published_at': post_dt.isoformat() if post_dt else None,
                 'source_profile': perfil_alvo,
                 'followers': seguidores,

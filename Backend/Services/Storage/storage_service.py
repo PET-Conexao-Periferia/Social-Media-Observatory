@@ -139,6 +139,7 @@ def salvar_post_json(post):
                 if comments_count is not None
                 else len(comentarios_proc)
             ),
+            "reposts": post.get("reposts", 0),
             "comentarios": comentarios_proc,
             "source_profile": perfil,
             "followers": seguidores,
