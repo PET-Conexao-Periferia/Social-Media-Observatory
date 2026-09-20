@@ -48,6 +48,32 @@ def obter_seguidores(driver):
         print(f"Erro ao obter seguidores: {e}")
         return 0
     
+def converter_metrica(texto):
+    if not texto:
+        return 0
+
+    texto = str(texto).lower()
+    texto = re.sub(r'\s+', ' ', texto).strip()
+    texto = texto.replace(',', '.')
+
+    if 'mil' in texto:
+        numero = texto.replace('mil', '').strip()
+        return int(float(numero) * 1000)
+
+    if 'mi' in texto:
+        numero = texto.replace('mi', '').strip()
+        return int(float(numero) * 1_000_000)
+
+    if texto.endswith('k'):
+        numero = texto[:-1].strip()
+        return int(float(numero) * 1000)
+
+    if texto.endswith('m'):
+        numero = texto[:-1].strip()
+        return int(float(numero) * 1_000_000)
+
+    return int(texto.replace('.', ''))
+
 def obter_metricas_post(driver):
     try:
         likes = WebDriverWait(driver, 5).until(
@@ -67,12 +93,16 @@ def obter_metricas_post(driver):
             "//main/div/div[1]/div/div[2]/div/div[3]/section/div[1]/span[5]"
         ).text
 
+        likes = converter_metrica(likes)
+        comments = converter_metrica(comments)
+        reposts = converter_metrica(reposts)
+
         return likes, comments, reposts
 
     except Exception as e:
         print(f"Erro ao obter métricas do post: {e}")
         return 0, 0, 0
-    
+        
 def _parse_datetime_str(s):
     if not s:
         return None

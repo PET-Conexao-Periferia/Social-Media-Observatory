@@ -11,7 +11,7 @@ PESO_LIKES = 1.4
 PESO_COMMENTS = 8.6
 quant_scrolagem =  1 #quanto maior o número, mais antigo será o post
 rolagem_comentarios = 1
-total_posicoes = 10 #número de posições a exibir no ranking final
+total_posicoes = 20 #número de posições a exibir no ranking final
 
 # Período para filtrar posts 
 
