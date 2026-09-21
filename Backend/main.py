@@ -7,10 +7,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 # VARIAVEIS 
-PESO_LIKES = 1.4
-PESO_COMMENTS = 8.6
 quant_scrolagem =  1 #quanto maior o número, mais antigo será o post
-rolagem_comentarios = 1
+rolagem_comentarios = 3
 total_posicoes = 20 #número de posições a exibir no ranking final
 
 # Período para filtrar posts 
@@ -133,8 +131,6 @@ def main():
         posts = carregar_posts_para_ranking()
         gerar_rankings(
         posts,
-        PESO_LIKES,
-        PESO_COMMENTS,
         total_posicoes
         )
 

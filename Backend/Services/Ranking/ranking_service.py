@@ -8,12 +8,13 @@ from Backend.Config.paths import (
 )
 
 
-def calcular_score(row, peso_likes, peso_comments):
+def calcular_score(row):
     likes = row['likes']
     comments = row['comments_count']
+    reposts = row['reposts']
     seguidores = row['followers']
 
-    M = (likes * peso_likes) + (comments * peso_comments)
+    M = (likes * 1) + (comments * 3) + (reposts * 6)
 
     seguidores_validos = max(seguidores, 1)
 
@@ -29,7 +30,7 @@ def gerar_resumo_legenda(texto, limite=50):
     return ' '.join(palavras[:limite]) + '...'
 
 
-def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
+def gerar_rankings(posts, total_posicoes):
     if not posts:
         print("Nenhum post encontrado para ranking.")
         return
@@ -42,13 +43,14 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
             'legenda_post': p.get('legenda_post', ''),
             'likes': p.get('likes', 0),
             'comments_count': p.get('comments_count', 0),
+            'reposts': p.get('reposts', 0),
             'followers': p.get('followers', 1),
         }
         for p in posts
     ])
 
-    df[['likes', 'comments_count', 'followers']] = df[
-        ['likes', 'comments_count', 'followers']
+    df[['likes', 'comments_count', 'reposts', 'followers']] = df[
+        ['likes', 'comments_count', 'reposts', 'followers']
     ].fillna(0)
 
     df['followers'] = df['followers'].replace(0, 1)
@@ -59,8 +61,7 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
 
     df['score_engajamento'] = df.apply(
         calcular_score,
-        axis=1,
-        args=(PESO_LIKES, PESO_COMMENTS)
+        axis=1
     )
 
     RANKINGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -119,6 +120,7 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
             'legenda_resumo',
             'likes',
             'comments_count',
+            'reposts',
             'followers',
             'score_engajamento',
         ]

@@ -120,6 +120,7 @@ const getLegendaCompleta = (texto) => {
             <th class="px-4 py-3 text-left">Perfil</th>
             <th class="px-4 py-3 text-left">Curtidas</th>
             <th class="px-4 py-3 text-left">Comentários</th>
+            <th class="px-4 py-3 text-left">Reposts</th>
             <th class="px-4 py-3 text-left">Seguidores</th>
             <th class="px-4 py-3 text-left">Engajamento</th>
             <th class="px-4 py-3 text-left">Data</th>
@@ -144,6 +145,10 @@ const getLegendaCompleta = (texto) => {
 
             <td class="px-4 py-3">
               {{ item.comments_count }}
+            </td>
+
+            <td class="px-4 py-3">
+              {{ Number(item.reposts || 0).toLocaleString('pt-BR') }}
             </td>
 
             <td class="px-4 py-3">
