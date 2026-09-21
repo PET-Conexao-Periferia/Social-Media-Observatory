@@ -76,26 +76,49 @@ def converter_metrica(texto):
 
 def obter_metricas_post(driver):
     try:
-        likes = WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((
+        base_xpath = (
+            "//main/div/div[1]/div/div[2]/div/div[3]"
+            "/section[1]/div[1]"
+        )
+
+        # Primeiro tenta o layout em que a quantidade de curtidas aparece.
+        try:
+            likes_element = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((
+                    By.XPATH,
+                    f"{base_xpath}/span[2]"
+                ))
+            )
+
+            likes_text = likes_element.text
+
+            comments_text = driver.find_element(
                 By.XPATH,
-                "//main/div/div[1]/div/div[2]/div/div[3]/section/div[1]/span[2]"
-            ))
-        ).text
+                f"{base_xpath}/span[4]"
+            ).text
 
-        comments = driver.find_element(
-            By.XPATH,
-            "//main/div/div[1]/div/div[2]/div/div[3]/section/div[1]/span[4]"
-        ).text
+            reposts_text = driver.find_element(
+                By.XPATH,
+                f"{base_xpath}/span[5]"
+            ).text
 
-        reposts = driver.find_element(
-            By.XPATH,
-            "//main/div/div[1]/div/div[2]/div/div[3]/section/div[1]/span[5]"
-        ).text
+        except Exception:
+            # Layout em que a quantidade de curtidas não é exibida.
+            likes_text = "0"
 
-        likes = converter_metrica(likes)
-        comments = converter_metrica(comments)
-        reposts = converter_metrica(reposts)
+            comments_text = driver.find_element(
+                By.XPATH,
+                f"{base_xpath}/span[3]"
+            ).text
+
+            reposts_text = driver.find_element(
+                By.XPATH,
+                f"{base_xpath}/span[4]"
+            ).text
+
+        likes = converter_metrica(likes_text)
+        comments = converter_metrica(comments_text)
+        reposts = converter_metrica(reposts_text)
 
         return likes, comments, reposts
 
@@ -427,8 +450,8 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                 'legenda_post': legenda,
                 'comentarios': lista_comentarios,
                 'likes': likes,
-                'comments_count': len(lista_comentarios),
-                 'reposts': reposts,
+                'comments_count': comments_count,
+                'reposts': reposts,
                 'published_at': post_dt.isoformat() if post_dt else None,
                 'source_profile': perfil_alvo,
                 'followers': seguidores,

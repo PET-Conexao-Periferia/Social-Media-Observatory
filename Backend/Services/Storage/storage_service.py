@@ -68,10 +68,11 @@ def salvar_post_json(post):
 
         legenda = post.get("legenda_post") or ""
 
-        # Usa primeiro a métrica capturada diretamente do Instagram pelo scraper.
+                # Usa primeiro a métrica capturada diretamente do Instagram pelo scraper.
+
         likes = post.get("likes")
 
-        comments_count = None
+        comments_count = post.get("comments_count")
 
         if legenda:
 
@@ -87,10 +88,11 @@ def salvar_post_json(post):
                 if likes is None:
                     likes = _parse_metrica(m.group(1))
 
-                try:
-                    comments_count = _parse_metrica(m.group(2))
-                except Exception:
-                    comments_count = None
+                if comments_count is None:
+                    try:
+                        comments_count = _parse_metrica(m.group(2))
+                    except Exception:
+                        comments_count = None
 
                 legenda = re.sub(
                     re.escape(m.group(0)),
@@ -126,14 +128,15 @@ def salvar_post_json(post):
 
                 if m3:
 
-                    comments_count = _parse_metrica(m3.group(1))
+                    if comments_count is None:
+                        comments_count = _parse_metrica(m3.group(1))
 
                     legenda = re.sub(
                         re.escape(m3.group(0)),
                         "",
                         legenda
                     ).strip(" -:\n")
-
+                    
         comentarios = post.get("comentarios", []) or []
 
         comentarios_proc = []
