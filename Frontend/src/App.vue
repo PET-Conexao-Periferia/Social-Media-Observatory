@@ -80,114 +80,115 @@ const getLegendaCompleta = (texto) => {
 </script>
 
 <template>
-  <nav class="w-full bg-white shadow-md px-6 py-4 flex items-center justify-between">
-    <img src="@/assets/logo-pet-horizontal.svg" alt="Logo" class="h-16 ml-8 mt-3" />
+  <nav class="w-full bg-white shadow-md px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+    <img src="@/assets/logo-pet-horizontal.svg" alt="Logo" class="h-10 sm:h-14 md:h-16 sm:ml-2 md:ml-8 mt-1 sm:mt-3" />
 
-    <h1 class="text-xl font-bold text-center text-gray-700">
+    <h1 class="text-sm sm:text-lg md:text-xl font-bold text-center text-gray-700 leading-tight px-2">
       Observatório das Mídias Sociais do Litoral Norte - PE
     </h1>
 
-    <ul class="flex gap-6 text-gray-700 font-medium mr-8">
+    <ul class="flex text-gray-700 font-medium sm:mr-2 md:mr-8">
       <li>
         <a href="/" class="hover:text-blue-600 transition">Sobre</a>
       </li>
     </ul>
   </nav>
 
-  <div class="max-w-7xl mx-auto mt-10 p-4 bg-white rounded-xl shadow-lg">
-    <h2 class="text-2xl font-medium text-center text-gray-800 mb-8">
-      Ranking de Engajamento geral
-    </h2>
+  <div class="w-full max-w-[1600px] mx-auto mt-4 sm:mt-6 md:mt-8 px-2 sm:px-4 lg:px-6">
+    <div class="bg-white rounded-xl shadow-lg p-2 sm:p-4 md:p-6">
+      <h2 class="text-lg sm:text-2xl font-medium text-center text-gray-800 mb-4 sm:mb-6">
+        Ranking de Engajamento geral
+      </h2>
 
-    <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4">
-      Período: {{ new Date(startDate).toLocaleDateString('pt-BR') }} — {{ new Date(endDate).toLocaleDateString('pt-BR')
-      }}
-    </p>
+      <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4 text-xs sm:text-sm md:text-base">
+        Período: {{ new Date(startDate).toLocaleDateString('pt-BR') }} — {{ new Date(endDate).toLocaleDateString('pt-BR') }}
+      </p>
 
-    <p v-else-if="!loading" class="text-center text-gray-600 mb-4">
-      Período: -
-    </p>
+      <p v-else-if="!loading" class="text-center text-gray-600 mb-4 text-xs sm:text-sm md:text-base">
+        Período: -
+      </p>
 
-    <p v-if="loading" class="text-center text-gray-500">
-      Carregando dados...
-    </p>
+      <p v-if="loading" class="text-center text-gray-500">
+        Carregando dados...
+      </p>
 
-    <div v-else class="overflow-x-auto">
-      <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
-        <thead class="bg-gray-100 text-gray-700 text-sm uppercase">
-          <tr>
-            <th class="px-4 py-3 text-left"></th>
-            <th class="px-4 py-3 text-left">Perfil</th>
-            <th class="px-4 py-3 text-left">Curtidas</th>
-            <th class="px-4 py-3 text-left">Comentários</th>
-            <th class="px-4 py-3 text-left">Reposts</th>
-            <th class="px-4 py-3 text-left">Seguidores</th>
-            <th class="px-4 py-3 text-left">Engajamento</th>
-            <th class="px-4 py-3 text-left">Data</th>
-            <th class="px-4 py-3 text-left">Legenda</th>
-            <th class="px-4 py-3 text-left">Post</th>
-          </tr>
-        </thead>
+      <div v-else class="w-full">
+        <table class="ranking-table w-full border border-gray-200 rounded-lg overflow-hidden">
+          <thead class="bg-gray-100 text-gray-700 text-[10px] sm:text-xs lg:text-sm uppercase">
+            <tr>
+              <th class="px-1 sm:px-2 py-2 text-left">Pos.</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Perfil</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Curtidas</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Comentários</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Reposts</th>
+              <th class="px-1 sm:px-2 py-2 text-left col-followers">Seguidores</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Engajamento</th>
+              <th class="px-1 sm:px-2 py-2 text-left col-date">Data</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Legenda</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Post</th>
+            </tr>
+          </thead>
 
-        <tbody class="divide-y divide-gray-200">
-          <tr v-for="(item, index) in ranking" :key="item.source_profile" class="hover:bg-gray-50 transition">
-            <td class="px-4 py-3 font-semibold text-gray-600">
-              {{ item.position }}
-            </td>
+          <tbody class="divide-y divide-gray-200">
+            <tr v-for="(item, index) in ranking" :key="item.source_profile" class="hover:bg-gray-50 transition">
+              <td data-label="Posição" class="px-1 sm:px-2 py-2 font-semibold text-gray-600">
+                {{ item.position }}
+              </td>
 
-            <td class="px-4 py-3 font-medium text-gray-800">
-              {{ item.source_profile }}
-            </td>
+              <td data-label="Perfil" class="px-1 sm:px-2 py-2 font-medium text-gray-800">
+                {{ item.source_profile }}
+              </td>
 
-            <td class="px-4 py-3">
-              {{ item.likes }}
-            </td>
+              <td data-label="Curtidas" class="px-1 sm:px-2 py-2">
+                {{ item.likes }}
+              </td>
 
-            <td class="px-4 py-3">
-              {{ item.comments_count }}
-            </td>
+              <td data-label="Comentários" class="px-1 sm:px-2 py-2">
+                {{ item.comments_count }}
+              </td>
 
-            <td class="px-4 py-3">
-              {{ Number(item.reposts || 0).toLocaleString('pt-BR') }}
-            </td>
+              <td data-label="Reposts" class="px-1 sm:px-2 py-2">
+                {{ Number(item.reposts || 0).toLocaleString('pt-BR') }}
+              </td>
 
-            <td class="px-4 py-3">
-              {{ Number(item.followers).toLocaleString('pt-BR') }}
-            </td>
+              <td data-label="Seguidores" class="px-1 sm:px-2 py-2 col-followers">
+                {{ Number(item.followers).toLocaleString('pt-BR') }}
+              </td>
 
-            <td class="px-4 py-3 font-semibold text-green-600">
-              {{ item.score_engajamento.toFixed(2) }}
-            </td>
+              <td data-label="Engajamento" class="px-1 sm:px-2 py-2 font-semibold text-green-600">
+                {{ item.score_engajamento.toFixed(2) }}
+              </td>
 
-            <td class="px-4 py-3">
-              {{ item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR') : '-' }}
-            </td>
+              <td data-label="Data" class="px-1 sm:px-2 py-2 col-date">
+                {{ item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR') : '-' }}
+              </td>
 
-            <td class="px-4 py-3 max-w-lg">
-              <div class="text-sm text-gray-700 max-w-xs" :class="expanded[index]
-                ? 'whitespace-normal'
-                : 'whitespace-nowrap overflow-hidden text-ellipsis'">
-                {{
-                  expanded[index]
-                    ? getLegendaCompleta(item.legenda_post)
-                    : formatLegenda(item.legenda_post, 150)
-                }}
-              </div>
+              <td data-label="Legenda" class="px-1 sm:px-2 py-2">
+                <div class="text-xs sm:text-sm text-gray-700 legenda-conteudo" :class="expanded[index]
+                  ? 'whitespace-normal'
+                  : 'whitespace-nowrap overflow-hidden text-ellipsis'">
+                  {{
+                    expanded[index]
+                      ? getLegendaCompleta(item.legenda_post)
+                      : formatLegenda(item.legenda_post, 150)
+                  }}
+                </div>
 
-              <button v-if="getLegendaCompleta(item.legenda_post).length > 150" @click="toggleExpand(index)"
-                class="mt-1 text-blue-500 hover:underline text-xs font-medium">
-                {{ expanded[index] ? 'ver menos' : 'ver mais' }}
-              </button>
-            </td>
+                <button v-if="getLegendaCompleta(item.legenda_post).length > 150" @click="toggleExpand(index)"
+                  class="mt-1 text-blue-500 hover:underline text-xs font-medium">
+                  {{ expanded[index] ? 'ver menos' : 'ver mais' }}
+                </button>
+              </td>
 
-            <td class="px-4 py-3 whitespace-nowrap">
-              <a :href="item.post_url" target="_blank" class="text-blue-500 hover:underline font-medium">
-                Ver Post
-              </a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <td data-label="Post" class="px-1 sm:px-2 py-2">
+                <a :href="item.post_url" target="_blank" class="text-blue-500 hover:underline font-medium whitespace-nowrap">
+                  Ver Post
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
