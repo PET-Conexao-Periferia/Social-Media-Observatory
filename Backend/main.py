@@ -9,15 +9,14 @@ from dotenv import load_dotenv
 # VARIAVEIS 
 quant_scrolagem =  1 #quanto maior o número, mais antigo será o post
 rolagem_comentarios = 3
-total_posicoes = 20 #número de posições a exibir no ranking final
 
 # Período para filtrar posts 
 
-USE_LAST_DAYS = True      # True = ignora PERIOD_START e PERIOD_END
+USE_LAST_DAYS = False      # True = ignora PERIOD_START e PERIOD_END
 LAST_DAYS = 7
 
 PERIOD_START = "2025-11-01"    # exemplo: "2025-01-01" ou None
-PERIOD_END = "2026-05-31"
+PERIOD_END = "2026-09-31"
 
 from Backend.Services.Browser.driver_service import create_driver
 from Backend.Services.Auth.auth_service import (
@@ -129,10 +128,7 @@ def main():
 
 
         posts = carregar_posts_para_ranking()
-        gerar_rankings(
-        posts,
-        total_posicoes
-        )
+        gerar_rankings(posts)
 
 
     finally:

@@ -1,34 +1,66 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const ranking = ref([])
 const loading = ref(true)
 const startDate = ref(null)
 const endDate = ref(null)
+const quantidadePosts = ref(10)
 const expanded = ref({})
 
 const toggleExpand = (index) => {
   expanded.value[index] = !expanded.value[index]
 }
 
+const formatDateInput = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const rankingFiltrado = computed(() => {
+  if (!startDate.value || !endDate.value) {
+    return []
+  }
+
+  const inicio = new Date(`${startDate.value}T00:00:00`)
+  const fim = new Date(`${endDate.value}T23:59:59`)
+
+  return ranking.value
+    .filter((item) => {
+      if (!item.published_at) return false
+
+      const dataPost = new Date(item.published_at)
+
+      return dataPost >= inicio && dataPost <= fim
+    })
+    .sort((a, b) => {
+      return Number(b.score_engajamento) - Number(a.score_engajamento)
+    })
+    .map((item, index) => ({
+      ...item,
+      position: index + 1
+    }))
+})
+
+const rankingExibido = computed(() => {
+  return rankingFiltrado.value.slice(0, quantidadePosts.value)
+})
+
 onMounted(async () => {
   try {
     const response = await fetch('/dados_ranking/ranking_posts_geral.json')
     ranking.value = await response.json()
 
-    const published = ranking.value
-      .map((i) => i.published_at)
-      .filter(Boolean)
-      .map((s) => new Date(s))
+    const hoje = new Date()
+    const seteDiasAtras = new Date(hoje)
 
-    if (published.length) {
-      const times = published.map((d) => d.getTime())
-      const min = new Date(Math.min(...times))
-      const max = new Date(Math.max(...times))
-      const fmt = (d) => d.toISOString().split('T')[0]
-      startDate.value = fmt(min)
-      endDate.value = fmt(max)
-    }
+    seteDiasAtras.setDate(hoje.getDate() - 6)
+
+    startDate.value = formatDateInput(seteDiasAtras)
+    endDate.value = formatDateInput(hoje)
   } catch (error) {
     console.error('Erro ao carregar ranking:', error)
   } finally {
@@ -100,17 +132,68 @@ const getLegendaCompleta = (texto) => {
         Ranking de Engajamento geral
       </h2>
 
+      <div v-if="!loading" class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div class="flex flex-col w-full sm:w-auto">
+          <label for="start-date" class="text-xs sm:text-sm font-medium text-gray-600 mb-1">
+            Data inicial
+          </label>
+
+          <input
+            id="start-date"
+            v-model="startDate"
+            type="date"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-auto"
+          />
+        </div>
+
+        <div class="flex flex-col w-full sm:w-auto">
+          <label for="end-date" class="text-xs sm:text-sm font-medium text-gray-600 mb-1">
+            Data final
+          </label>
+
+          <input
+            id="end-date"
+            v-model="endDate"
+            type="date"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-auto"
+          />
+        </div>
+
+        <div class="flex flex-col w-full sm:w-auto">
+          <label for="quantidade-posts" class="text-xs sm:text-sm font-medium text-gray-600 mb-1">
+            Quantidade de posts
+          </label>
+
+          <select
+            id="quantidade-posts"
+            v-model.number="quantidadePosts"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-auto"
+          >
+            <option :value="5">5</option>
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+            <option :value="30">30</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+        </div>
+      </div>
+
       <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4 text-xs sm:text-sm md:text-base">
-        Período: {{ new Date(startDate).toLocaleDateString('pt-BR') }} — {{ new Date(endDate).toLocaleDateString('pt-BR') }}
+        Período: {{ new Date(`${startDate}T00:00:00`).toLocaleDateString('pt-BR') }} — {{ new Date(`${endDate}T00:00:00`).toLocaleDateString('pt-BR') }}
       </p>
 
-      <p v-else-if="!loading" class="text-center text-gray-600 mb-4 text-xs sm:text-sm md:text-base">
-        Período: -
+      <p v-if="!loading && rankingFiltrado.length > 0" class="text-center text-gray-500 mb-4 text-xs sm:text-sm">
+        Exibindo {{ Math.min(quantidadePosts, rankingFiltrado.length) }} de {{ rankingFiltrado.length }} posts encontrados no período.
       </p>
 
       <p v-if="loading" class="text-center text-gray-500">
         Carregando dados...
       </p>
+
+      <div v-else-if="rankingFiltrado.length === 0" class="text-center text-gray-500 py-8">
+        Nenhum post encontrado no período selecionado.
+      </div>
 
       <div v-else class="w-full">
         <table class="ranking-table w-full border border-gray-200 rounded-lg overflow-hidden">
@@ -130,7 +213,7 @@ const getLegendaCompleta = (texto) => {
           </thead>
 
           <tbody class="divide-y divide-gray-200">
-            <tr v-for="(item, index) in ranking" :key="item.source_profile" class="hover:bg-gray-50 transition">
+            <tr v-for="(item, index) in rankingExibido" :key="item.post_url || `${item.source_profile}-${item.published_at}-${index}`" class="hover:bg-gray-50 transition">
               <td data-label="Posição" class="px-1 sm:px-2 py-2 font-semibold text-gray-600">
                 {{ item.position }}
               </td>
@@ -140,11 +223,11 @@ const getLegendaCompleta = (texto) => {
               </td>
 
               <td data-label="Curtidas" class="px-1 sm:px-2 py-2">
-                {{ item.likes }}
+                {{ Number(item.likes || 0).toLocaleString('pt-BR') }}
               </td>
 
               <td data-label="Comentários" class="px-1 sm:px-2 py-2">
-                {{ item.comments_count }}
+                {{ Number(item.comments_count || 0).toLocaleString('pt-BR') }}
               </td>
 
               <td data-label="Reposts" class="px-1 sm:px-2 py-2">
@@ -152,11 +235,11 @@ const getLegendaCompleta = (texto) => {
               </td>
 
               <td data-label="Seguidores" class="px-1 sm:px-2 py-2 col-followers">
-                {{ Number(item.followers).toLocaleString('pt-BR') }}
+                {{ Number(item.followers || 0).toLocaleString('pt-BR') }}
               </td>
 
               <td data-label="Engajamento" class="px-1 sm:px-2 py-2 font-semibold text-green-600">
-                {{ item.score_engajamento.toFixed(2) }}
+                {{ Number(item.score_engajamento || 0).toFixed(2) }}
               </td>
 
               <td data-label="Data" class="px-1 sm:px-2 py-2 col-date">
@@ -164,9 +247,12 @@ const getLegendaCompleta = (texto) => {
               </td>
 
               <td data-label="Legenda" class="px-1 sm:px-2 py-2">
-                <div class="text-xs sm:text-sm text-gray-700 legenda-conteudo" :class="expanded[index]
-                  ? 'whitespace-normal'
-                  : 'whitespace-nowrap overflow-hidden text-ellipsis'">
+                <div
+                  class="text-xs sm:text-sm text-gray-700 legenda-conteudo"
+                  :class="expanded[index]
+                    ? 'whitespace-normal'
+                    : 'whitespace-nowrap overflow-hidden text-ellipsis'"
+                >
                   {{
                     expanded[index]
                       ? getLegendaCompleta(item.legenda_post)
@@ -174,14 +260,22 @@ const getLegendaCompleta = (texto) => {
                   }}
                 </div>
 
-                <button v-if="getLegendaCompleta(item.legenda_post).length > 150" @click="toggleExpand(index)"
-                  class="mt-1 text-blue-500 hover:underline text-xs font-medium">
+                <button
+                  v-if="getLegendaCompleta(item.legenda_post).length > 150"
+                  @click="toggleExpand(index)"
+                  class="mt-1 text-blue-500 hover:underline text-xs font-medium"
+                >
                   {{ expanded[index] ? 'ver menos' : 'ver mais' }}
                 </button>
               </td>
 
               <td data-label="Post" class="px-1 sm:px-2 py-2">
-                <a :href="item.post_url" target="_blank" class="text-blue-500 hover:underline font-medium whitespace-nowrap">
+                <a
+                  :href="item.post_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-500 hover:underline font-medium whitespace-nowrap"
+                >
                   Ver Post
                 </a>
               </td>

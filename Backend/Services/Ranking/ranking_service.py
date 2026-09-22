@@ -30,7 +30,7 @@ def gerar_resumo_legenda(texto, limite=50):
     return ' '.join(palavras[:limite]) + '...'
 
 
-def gerar_rankings(posts, total_posicoes):
+def gerar_rankings(posts):
     if not posts:
         print("Nenhum post encontrado para ranking.")
         return
@@ -86,7 +86,7 @@ def gerar_rankings(posts, total_posicoes):
            RANKING_BY_PROFILE_DIR
             / f"ranking_{perfil_filename}.csv"
         )
-        ranking.head(total_posicoes).to_csv(
+        ranking.to_csv(
             csv_path,
             index=False,
             encoding='utf-8-sig'
@@ -96,7 +96,7 @@ def gerar_rankings(posts, total_posicoes):
             FRONTEND_RANKING_DIR
             / f"ranking_{perfil_filename}.json"
         )
-        ranking.head(10).to_json(
+        ranking.to_json(
             json_path,
             orient='records',
             force_ascii=False,
@@ -126,15 +126,15 @@ def gerar_rankings(posts, total_posicoes):
         ]
     ]
 
-    print(tabela_final.head(total_posicoes).to_string(index=False))
+    print(tabela_final.to_string(index=False))
 
-    tabela_final.head(total_posicoes).to_csv(
-    RANKINGS_DIR / "ranking_posts_geral.csv",
+    tabela_final.to_csv(
+        RANKINGS_DIR / "ranking_posts_geral.csv",
         index=False,
         encoding='utf-8-sig'
     )
 
-    tabela_final.head(total_posicoes).to_json(
+    tabela_final.to_json(
         FRONTEND_RANKING_DIR / "ranking_posts_geral.json",
         orient='records',
         force_ascii=False,
