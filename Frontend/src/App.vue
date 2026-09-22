@@ -129,7 +129,7 @@ const getLegendaCompleta = (texto) => {
   <div class="w-full max-w-[1600px] mx-auto mt-4 sm:mt-6 md:mt-8 px-2 sm:px-4 lg:px-6">
     <div class="bg-white rounded-xl shadow-lg p-2 sm:p-4 md:p-6">
       <h2 class="text-lg sm:text-2xl font-medium text-center text-gray-800 mb-4 sm:mb-6">
-        Ranking de Engajamento geral
+        Ranking de Engajamento
       </h2>
 
       <div v-if="!loading" class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -179,9 +179,9 @@ const getLegendaCompleta = (texto) => {
         </div>
       </div>
 
-      <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4 text-xs sm:text-sm md:text-base">
+      <!-- <p v-if="!loading && startDate && endDate" class="text-center text-gray-600 mb-4 text-xs sm:text-sm md:text-base">
         Período: {{ new Date(`${startDate}T00:00:00`).toLocaleDateString('pt-BR') }} — {{ new Date(`${endDate}T00:00:00`).toLocaleDateString('pt-BR') }}
-      </p>
+      </p> -->
 
       <p v-if="!loading && rankingFiltrado.length > 0" class="text-center text-gray-500 mb-4 text-xs sm:text-sm">
         Exibindo {{ Math.min(quantidadePosts, rankingFiltrado.length) }} de {{ rankingFiltrado.length }} posts encontrados no período.

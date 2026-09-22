@@ -18,13 +18,19 @@ body {
 
 .ranking-table th:nth-child(2),
 .ranking-table td:nth-child(2) {
-  width: 10%;
+  width: 9%;
 }
 
 .ranking-table th:nth-child(3),
-.ranking-table td:nth-child(3),
+.ranking-table td:nth-child(3) {
+  width: 7%;
+}
+
 .ranking-table th:nth-child(4),
-.ranking-table td:nth-child(4),
+.ranking-table td:nth-child(4) {
+  width: 10%;
+}
+
 .ranking-table th:nth-child(5),
 .ranking-table td:nth-child(5) {
   width: 7%;
@@ -32,30 +38,33 @@ body {
 
 .ranking-table th:nth-child(6),
 .ranking-table td:nth-child(6) {
-  width: 9%;
+  width: 10%;
 }
 
 .ranking-table th:nth-child(7),
 .ranking-table td:nth-child(7) {
-  width: 9%;
+  width: 10%;
 }
 
 .ranking-table th:nth-child(8),
 .ranking-table td:nth-child(8) {
-  width: 8%;
+  width: 9%;
 }
 
 .ranking-table th:nth-child(9),
 .ranking-table td:nth-child(9) {
-  width: 30%;
+  width: 26%;
 }
 
 .ranking-table th:nth-child(10),
 .ranking-table td:nth-child(10) {
-  width: 9%;
+  width: 8%;
 }
 
-.ranking-table th,
+.ranking-table th {
+  white-space: nowrap;
+}
+
 .ranking-table td {
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -80,7 +89,7 @@ body {
   }
 
   .ranking-table td:nth-child(10) {
-    text-align: center;
+    text-align: left;
   }
 }
 
