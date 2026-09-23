@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 
 const ranking = ref([])
 const loading = ref(true)
@@ -7,9 +7,33 @@ const startDate = ref(null)
 const endDate = ref(null)
 const quantidadePosts = ref(10)
 const expanded = ref({})
+const legendaRefs = ref({})
+const legendaPodeExpandir = ref({})
 
 const toggleExpand = (index) => {
   expanded.value[index] = !expanded.value[index]
+}
+
+const definirLegendaRef = (el, index) => {
+  if (el) {
+    legendaRefs.value[index] = el
+  }
+}
+
+const verificarLegenda = (index) => {
+  const elemento = legendaRefs.value[index]
+
+  if (!elemento) return
+
+  legendaPodeExpandir.value[index] =
+    elemento.scrollWidth > elemento.clientWidth ||
+    elemento.scrollHeight > elemento.clientHeight
+}
+
+const verificarTodasLegendas = () => {
+  rankingExibido.value.forEach((_, index) => {
+    verificarLegenda(index)
+  })
 }
 
 const formatDateInput = (date) => {
@@ -66,6 +90,18 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
+
+onMounted(async () => {
+  await nextTick()
+  verificarTodasLegendas()
+
+  window.addEventListener('resize', verificarTodasLegendas)
+})
+
+watch(rankingExibido, async () => {
+  await nextTick()
+  verificarTodasLegendas()
 })
 
 const formatLegenda = (texto, limite = 150) => {
@@ -200,15 +236,15 @@ const getLegendaCompleta = (texto) => {
           <thead class="bg-gray-100 text-gray-700 text-[10px] sm:text-xs lg:text-sm uppercase">
             <tr>
               <th class="px-1 sm:px-2 py-2 text-left">Pos.</th>
-              <th class="px-1 sm:px-2 py-2 text-left">Perfil</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Post</th>
+              <th class="px-1 sm:px-2 py-2 text-left col-date">Data</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Legenda</th>
               <th class="px-1 sm:px-2 py-2 text-left">Curtidas</th>
               <th class="px-1 sm:px-2 py-2 text-left">Comentários</th>
               <th class="px-1 sm:px-2 py-2 text-left">Reposts</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Perfil</th>
               <th class="px-1 sm:px-2 py-2 text-left col-followers">Seguidores</th>
               <th class="px-1 sm:px-2 py-2 text-left">Engajamento</th>
-              <th class="px-1 sm:px-2 py-2 text-left col-date">Data</th>
-              <th class="px-1 sm:px-2 py-2 text-left">Legenda</th>
-              <th class="px-1 sm:px-2 py-2 text-left">Post</th>
             </tr>
           </thead>
 
@@ -218,8 +254,43 @@ const getLegendaCompleta = (texto) => {
                 {{ item.position }}
               </td>
 
-              <td data-label="Perfil" class="px-1 sm:px-2 py-2 font-medium text-gray-800">
-                {{ item.source_profile }}
+              <td data-label="Post" class="px-1 sm:px-2 py-2">
+                <a
+                  :href="item.post_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-500 hover:underline font-medium whitespace-nowrap"
+                >
+                  Ver Post
+                </a>
+              </td>
+
+              <td data-label="Data" class="px-1 sm:px-2 py-2 col-date">
+                {{ item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR') : '-' }}
+              </td>
+
+              <td data-label="Legenda" class="px-1 sm:px-2 py-2">
+                <div
+                  :ref="(el) => definirLegendaRef(el, index)"
+                  class="text-xs sm:text-sm text-gray-700 legenda-conteudo"
+                  :class="expanded[index]
+                    ? 'whitespace-normal'
+                    : 'whitespace-nowrap overflow-hidden text-ellipsis'"
+                >
+                  {{
+                    expanded[index]
+                      ? getLegendaCompleta(item.legenda_post)
+                      : formatLegenda(item.legenda_post, 150)
+                  }}
+                </div>
+
+                <button
+                  v-if="legendaPodeExpandir[index]"
+                  @click="toggleExpand(index)"
+                  class="mt-1 text-blue-500 hover:underline text-xs font-medium"
+                >
+                  {{ expanded[index] ? 'ver menos' : 'ver mais' }}
+                </button>
               </td>
 
               <td data-label="Curtidas" class="px-1 sm:px-2 py-2">
@@ -234,50 +305,16 @@ const getLegendaCompleta = (texto) => {
                 {{ Number(item.reposts || 0).toLocaleString('pt-BR') }}
               </td>
 
+              <td data-label="Perfil" class="px-1 sm:px-2 py-2 font-medium text-gray-800">
+                {{ item.source_profile }}
+              </td>
+
               <td data-label="Seguidores" class="px-1 sm:px-2 py-2 col-followers">
                 {{ Number(item.followers || 0).toLocaleString('pt-BR') }}
               </td>
 
               <td data-label="Engajamento" class="px-1 sm:px-2 py-2 font-semibold text-green-600">
                 {{ Number(item.score_engajamento || 0).toFixed(2) }}
-              </td>
-
-              <td data-label="Data" class="px-1 sm:px-2 py-2 col-date">
-                {{ item.published_at ? new Date(item.published_at).toLocaleDateString('pt-BR') : '-' }}
-              </td>
-
-              <td data-label="Legenda" class="px-1 sm:px-2 py-2">
-                <div
-                  class="text-xs sm:text-sm text-gray-700 legenda-conteudo"
-                  :class="expanded[index]
-                    ? 'whitespace-normal'
-                    : 'whitespace-nowrap overflow-hidden text-ellipsis'"
-                >
-                  {{
-                    expanded[index]
-                      ? getLegendaCompleta(item.legenda_post)
-                      : formatLegenda(item.legenda_post, 150)
-                  }}
-                </div>
-
-                <button
-                  v-if="getLegendaCompleta(item.legenda_post).length > 150"
-                  @click="toggleExpand(index)"
-                  class="mt-1 text-blue-500 hover:underline text-xs font-medium"
-                >
-                  {{ expanded[index] ? 'ver menos' : 'ver mais' }}
-                </button>
-              </td>
-
-              <td data-label="Post" class="px-1 sm:px-2 py-2">
-                <a
-                  :href="item.post_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-blue-500 hover:underline font-medium whitespace-nowrap"
-                >
-                  Ver Post
-                </a>
               </td>
             </tr>
           </tbody>

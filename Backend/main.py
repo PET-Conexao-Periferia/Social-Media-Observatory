@@ -12,7 +12,7 @@ rolagem_comentarios = 3
 
 # Período para filtrar posts 
 
-USE_LAST_DAYS = False      # True = ignora PERIOD_START e PERIOD_END
+USE_LAST_DAYS = True      # True = ignora PERIOD_START e PERIOD_END
 LAST_DAYS = 7
 
 PERIOD_START = "2025-11-01"    # exemplo: "2025-01-01" ou None

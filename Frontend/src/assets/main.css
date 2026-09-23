@@ -18,17 +18,17 @@ body {
 
 .ranking-table th:nth-child(2),
 .ranking-table td:nth-child(2) {
-  width: 9%;
+  width: 8%;
 }
 
 .ranking-table th:nth-child(3),
 .ranking-table td:nth-child(3) {
-  width: 7%;
+  width: 9%;
 }
 
 .ranking-table th:nth-child(4),
 .ranking-table td:nth-child(4) {
-  width: 10%;
+  width: 26%;
 }
 
 .ranking-table th:nth-child(5),
@@ -43,7 +43,7 @@ body {
 
 .ranking-table th:nth-child(7),
 .ranking-table td:nth-child(7) {
-  width: 10%;
+  width: 7%;
 }
 
 .ranking-table th:nth-child(8),
@@ -53,12 +53,12 @@ body {
 
 .ranking-table th:nth-child(9),
 .ranking-table td:nth-child(9) {
-  width: 26%;
+  width: 10%;
 }
 
 .ranking-table th:nth-child(10),
 .ranking-table td:nth-child(10) {
-  width: 8%;
+  width: 10%;
 }
 
 .ranking-table th {
@@ -77,19 +77,20 @@ body {
   }
 
   .ranking-table td:nth-child(3),
-  .ranking-table td:nth-child(4),
   .ranking-table td:nth-child(5),
   .ranking-table td:nth-child(6),
-  .ranking-table td:nth-child(7) {
-    white-space: nowrap;
-  }
-
-  .ranking-table td:nth-child(8) {
-    white-space: nowrap;
-  }
-
+  .ranking-table td:nth-child(7),
+  .ranking-table td:nth-child(9),
   .ranking-table td:nth-child(10) {
-    text-align: left;
+    white-space: nowrap;
+  }
+
+   .ranking-table td:nth-child(5),
+  .ranking-table td:nth-child(6),
+  .ranking-table td:nth-child(7),
+    .ranking-table td:nth-child(9),
+  .ranking-table td:nth-child(10) {
+    text-align: center ;
   }
 }
 
@@ -105,7 +106,7 @@ body {
     letter-spacing: -0.02em;
   }
 
-  .ranking-table td:nth-child(9) {
+  .ranking-table td:nth-child(4) {
     font-size: 0.68rem;
   }
 }
@@ -164,14 +165,14 @@ body {
     color: #4b5563;
   }
 
-  .ranking-table td:nth-child(9) .legenda-conteudo {
+  .ranking-table td:nth-child(4) .legenda-conteudo {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
     word-break: break-word;
   }
 
-  .ranking-table td:nth-child(10) {
+  .ranking-table td:nth-child(2) {
     padding-bottom: 0.7rem;
   }
 }
@@ -197,15 +198,15 @@ body {
     display: none;
   }
 
-  .ranking-table td:nth-child(9) {
+  .ranking-table td:nth-child(4) {
     padding-top: 0.45rem;
   }
 
-  .ranking-table td:nth-child(10) {
+  .ranking-table td:nth-child(2) {
     padding-bottom: 0.55rem;
   }
 
-  .ranking-table td:nth-child(7) {
+  .ranking-table td:nth-child(10) {
     font-size: 0.88rem;
   }
 }
@@ -219,9 +220,9 @@ body {
     font-size: 0.78rem;
   }
 
-  .ranking-table td:nth-child(3),
-  .ranking-table td:nth-child(4),
-  .ranking-table td:nth-child(5) {
+  .ranking-table td:nth-child(5),
+  .ranking-table td:nth-child(6),
+  .ranking-table td:nth-child(7) {
     padding-top: 0.3rem;
     padding-bottom: 0.3rem;
   }
