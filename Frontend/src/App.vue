@@ -52,25 +52,29 @@ const rankingFiltrado = computed(() => {
   const inicio = new Date(`${startDate.value}T00:00:00`)
   const fim = new Date(`${endDate.value}T23:59:59`)
 
-  return ranking.value
-    .filter((item) => {
-      if (!item.published_at) return false
+  const postsFiltrados = ranking.value.filter((item) => {
+    if (!item.published_at) return false
 
-      const dataPost = new Date(item.published_at)
+    const dataPost = new Date(item.published_at)
 
-      return dataPost >= inicio && dataPost <= fim
-    })
-    .sort((a, b) => {
-      return Number(b.score_engajamento) - Number(a.score_engajamento)
-    })
+    return dataPost >= inicio && dataPost <= fim
+  })
+
+  return [...postsFiltrados].sort((a, b) => {
+    const scoreA = Number(a.score_engajamento)
+    const scoreB = Number(b.score_engajamento)
+
+    return scoreB - scoreA
+  })
+})
+
+const rankingExibido = computed(() => {
+  return rankingFiltrado.value
+    .slice(0, quantidadePosts.value)
     .map((item, index) => ({
       ...item,
       position: index + 1
     }))
-})
-
-const rankingExibido = computed(() => {
-  return rankingFiltrado.value.slice(0, quantidadePosts.value)
 })
 
 onMounted(async () => {
