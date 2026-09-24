@@ -25,7 +25,10 @@ const verificarLegenda = (index) => {
 
   if (!elemento) return
 
+  const legendaCompleta = getLegendaCompleta(rankingExibido.value[index]?.legenda_post)
+
   legendaPodeExpandir.value[index] =
+    legendaCompleta.length > 150 ||
     elemento.scrollWidth > elemento.clientWidth ||
     elemento.scrollHeight > elemento.clientHeight
 }
@@ -117,11 +120,8 @@ const formatLegenda = (texto, limite = 150) => {
     resultado = resultado.split(':').slice(1).join(':').trim()
   }
 
-  const match = resultado.match(/["“](.*?)["”]/)
-
-  if (match) {
-    resultado = match[1]
-  }
+  resultado = resultado.replace(/^[\"“]/, '')
+  resultado = resultado.replace(/[\"”](\.)?\s*$/, '$1')
 
   resultado = resultado.replace(/\n/g, ' ')
 
@@ -141,11 +141,8 @@ const getLegendaCompleta = (texto) => {
     resultado = resultado.split(':').slice(1).join(':').trim()
   }
 
-  const match = resultado.match(/["“](.*?)["”]/)
-
-  if (match) {
-    resultado = match[1]
-  }
+  resultado = resultado.replace(/^[\"“]/, '')
+  resultado = resultado.replace(/[\"”](\.)?\s*$/, '$1')
 
   return resultado.replace(/\n/g, ' ')
 }
@@ -280,7 +277,7 @@ const getLegendaCompleta = (texto) => {
               <td data-label="Legenda" class="px-1 sm:px-2 py-2">
                 <div
                   :ref="(el) => definirLegendaRef(el, index)"
-                 class="legenda-conteudo"
+                  class="legenda-conteudo"
                   :class="expanded[index]
                     ? 'whitespace-normal'
                     : 'legenda-limitada'"
