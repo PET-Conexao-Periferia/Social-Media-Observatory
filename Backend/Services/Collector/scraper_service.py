@@ -4,7 +4,8 @@ from datetime import datetime, date
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import re
+from Backend.Config.paths import DEBUG_POST_FILE
+from Backend.Services.Storage.storage_service import salvar_post_json
 
 def obter_seguidores(driver):
     try:
@@ -119,7 +120,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
         time.sleep(5)  
         print(f"Rolagem {i+1}/{quant_scrolagem} completada")
 
-    # Encontrar todos os links de posts que levam para '/p/' e coletar URLs únicas
+    # Encontrar todos os links de posts 
     try:
         wait = WebDriverWait(driver, 10) #pesquisar
         anchors = wait.until(
@@ -134,7 +135,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
 
     for a in anchors:
         href = a.get_attribute('href')
-        if href and '/p/' in href:
+        if href and any(x in href for x in ('/p/', '/reel/')):
             if href in seen_set:
                 continue
             seen_set.add(href)
@@ -170,7 +171,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
             # Salva o HTML do primeiro post para inspeção local (diagnóstico)
             if idx == 0:
                 try:
-                    with open('debug_post.html', 'w', encoding='utf-8') as f:
+                    with open(DEBUG_POST_FILE, "w", encoding="utf-8") as f:
                         f.write(driver.page_source)
                 except Exception as e:
                     print(f'Falha ao salvar debug_post.html: {e}')
@@ -361,18 +362,35 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                     continue
             print(f'Coletados {len(lista_comentarios)} comentários para {post_url}')
 
-            dados_completos.append({
+            post_data = {
                 'post_url': post_url,
                 'legenda_post': legenda,
                 'comentarios': lista_comentarios,
                 'likes': 0,
                 'comments_count': len(lista_comentarios),
                 'published_at': post_dt.isoformat() if post_dt else None,
-            })
+                'source_profile': perfil_alvo,
+                'followers': seguidores,
+            }
+
+            salvar_post_json(post_data)
+
+            dados_completos.append(post_data)
 
         except Exception as e:
             # caso de erro, registra informação mínima
-            dados_completos.append(
-                {'post_url': post_url, 'legenda_post': None, 'comentarios': [], 'error': str(e), 'published_at': None})
+            post_data = {
+                'post_url': post_url,
+                'legenda_post': None,
+                'comentarios': [],
+                'error': str(e),
+                'published_at': None,
+                'source_profile': perfil_alvo,
+                'followers': seguidores,
+            }
+
+            salvar_post_json(post_data)
+
+            dados_completos.append(post_data)
 
     return dados_completos, seguidores
