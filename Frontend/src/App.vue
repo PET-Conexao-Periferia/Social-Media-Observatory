@@ -237,18 +237,18 @@ const getLegendaCompleta = (texto) => {
 
       <div v-else class="w-full">
         <table class="ranking-table w-full border border-gray-200 rounded-lg overflow-hidden">
-          <thead class="bg-gray-100 text-gray-700 text-[10px] sm:text-xs lg:text-sm uppercase">
+          <thead class="bg-gray-100 text-gray-700 uppercase">
             <tr>
               <th class="px-1 sm:px-2 py-2 text-left">Pos.</th>
+              <th class="px-1 sm:px-2 py-2 text-left">Engajamento</th>
               <th class="px-1 sm:px-2 py-2 text-left">Post</th>
               <th class="px-1 sm:px-2 py-2 text-left col-date">Data</th>
               <th class="px-1 sm:px-2 py-2 text-left">Legenda</th>
-              <th class="px-1 sm:px-2 py-2 text-left">Curtidas</th>
-              <th class="px-1 sm:px-2 py-2 text-left">Comentários</th>
-              <th class="px-1 sm:px-2 py-2 text-left">Reposts</th>
+              <th class="px-1 sm:px-2 py-2 text-center">Curtidas</th>
+              <th class="px-1 sm:px-2 py-2 text-center">Comentários</th>
+              <th class="px-1 sm:px-2 py-2 text-center">Reposts</th>
               <th class="px-1 sm:px-2 py-2 text-left">Perfil</th>
-              <th class="px-1 sm:px-2 py-2 text-left col-followers">Seguidores</th>
-              <th class="px-1 sm:px-2 py-2 text-left">Engajamento</th>
+              <th class="px-1 sm:px-2 py-2 text-center col-followers">Seguidores</th>
             </tr>
           </thead>
 
@@ -256,6 +256,10 @@ const getLegendaCompleta = (texto) => {
             <tr v-for="(item, index) in rankingExibido" :key="item.post_url || `${item.source_profile}-${item.published_at}-${index}`" class="hover:bg-gray-50 transition">
               <td data-label="Posição" class="px-1 sm:px-2 py-2 font-semibold text-gray-600">
                 {{ item.position }}
+              </td>
+
+              <td data-label="Engajamento" class="px-1 sm:px-2 py-2 font-semibold text-green-600">
+                {{ Number(item.score_engajamento || 0).toFixed(2) }}
               </td>
 
               <td data-label="Post" class="px-1 sm:px-2 py-2">
@@ -276,10 +280,10 @@ const getLegendaCompleta = (texto) => {
               <td data-label="Legenda" class="px-1 sm:px-2 py-2">
                 <div
                   :ref="(el) => definirLegendaRef(el, index)"
-                  class="text-xs sm:text-sm text-gray-700 legenda-conteudo"
+                 class="legenda-conteudo"
                   :class="expanded[index]
                     ? 'whitespace-normal'
-                    : 'whitespace-nowrap overflow-hidden text-ellipsis'"
+                    : 'legenda-limitada'"
                 >
                   {{
                     expanded[index]
@@ -289,7 +293,7 @@ const getLegendaCompleta = (texto) => {
                 </div>
 
                 <button
-                  v-if="legendaPodeExpandir[index]"
+                  v-if="expanded[index] || legendaPodeExpandir[index]"
                   @click="toggleExpand(index)"
                   class="mt-1 text-blue-500 hover:underline text-xs font-medium"
                 >
@@ -315,10 +319,6 @@ const getLegendaCompleta = (texto) => {
 
               <td data-label="Seguidores" class="px-1 sm:px-2 py-2 col-followers">
                 {{ Number(item.followers || 0).toLocaleString('pt-BR') }}
-              </td>
-
-              <td data-label="Engajamento" class="px-1 sm:px-2 py-2 font-semibold text-green-600">
-                {{ Number(item.score_engajamento || 0).toFixed(2) }}
               </td>
             </tr>
           </tbody>

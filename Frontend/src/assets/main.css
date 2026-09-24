@@ -18,42 +18,42 @@ body {
 
 .ranking-table th:nth-child(2),
 .ranking-table td:nth-child(2) {
-  width: 8%;
+  width: 9%;
 }
 
 .ranking-table th:nth-child(3),
 .ranking-table td:nth-child(3) {
-  width: 9%;
+  width: 8%;
 }
 
 .ranking-table th:nth-child(4),
 .ranking-table td:nth-child(4) {
-  width: 26%;
+  width: 8%;
 }
 
 .ranking-table th:nth-child(5),
 .ranking-table td:nth-child(5) {
-  width: 7%;
+  width: 25%;
 }
 
 .ranking-table th:nth-child(6),
 .ranking-table td:nth-child(6) {
-  width: 10%;
+  width: 9%;
 }
 
 .ranking-table th:nth-child(7),
 .ranking-table td:nth-child(7) {
-  width: 7%;
+  width: 8%;
 }
 
 .ranking-table th:nth-child(8),
 .ranking-table td:nth-child(8) {
-  width: 9%;
+  width: 8%;
 }
 
 .ranking-table th:nth-child(9),
 .ranking-table td:nth-child(9) {
-  width: 10%;
+  width: 11%;
 }
 
 .ranking-table th:nth-child(10),
@@ -63,11 +63,21 @@ body {
 
 .ranking-table th {
   white-space: nowrap;
+  font-size: clamp(0.55rem, 0.75vw, 0.8rem);
 }
 
 .ranking-table td {
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.legenda-limitada {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  white-space: normal;
+  line-height: 1.25;
 }
 
 @media (min-width: 768px) {
@@ -76,26 +86,32 @@ body {
     line-height: 1.25;
   }
 
-  .ranking-table td:nth-child(3),
-  .ranking-table td:nth-child(5),
+  .ranking-table td:nth-child(2),
+  .ranking-table td:nth-child(4),
   .ranking-table td:nth-child(6),
   .ranking-table td:nth-child(7),
-  .ranking-table td:nth-child(9),
+  .ranking-table td:nth-child(8),
   .ranking-table td:nth-child(10) {
     white-space: nowrap;
   }
 
-   .ranking-table td:nth-child(5),
+  .ranking-table td:nth-child(1),
+  .ranking-table td:nth-child(2),
   .ranking-table td:nth-child(6),
   .ranking-table td:nth-child(7),
-    .ranking-table td:nth-child(9),
+  .ranking-table td:nth-child(8),
   .ranking-table td:nth-child(10) {
-    text-align: center ;
+    text-align: center;
   }
+
+  .ranking-table td:nth-child(5) {
+    text-align: left;
+  }
+
 }
 
 @media (min-width: 768px) and (max-width: 1199px) {
-  .ranking-table th,
+
   .ranking-table td {
     font-size: 0.7rem;
     padding-left: 0.25rem;
@@ -106,13 +122,12 @@ body {
     letter-spacing: -0.02em;
   }
 
-  .ranking-table td:nth-child(4) {
+  .ranking-table td:nth-child(5) {
     font-size: 0.68rem;
   }
 }
 
 @media (min-width: 1200px) {
-  .ranking-table th,
   .ranking-table td {
     font-size: 0.8rem;
   }
@@ -165,14 +180,15 @@ body {
     color: #4b5563;
   }
 
-  .ranking-table td:nth-child(4) .legenda-conteudo {
+  .ranking-table td:nth-child(5) .legenda-conteudo {
+
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
     word-break: break-word;
   }
 
-  .ranking-table td:nth-child(2) {
+  .ranking-table td:nth-child(3) {
     padding-bottom: 0.7rem;
   }
 }
@@ -181,7 +197,6 @@ body {
   .ranking-table tbody {
     gap: 0.5rem;
   }
-
   .ranking-table tr {
     padding: 0.2rem 0;
   }
@@ -198,15 +213,15 @@ body {
     display: none;
   }
 
-  .ranking-table td:nth-child(4) {
+  .ranking-table td:nth-child(5) {
     padding-top: 0.45rem;
   }
 
-  .ranking-table td:nth-child(2) {
+  .ranking-table td:nth-child(3) {
     padding-bottom: 0.55rem;
   }
 
-  .ranking-table td:nth-child(10) {
+  .ranking-table td:nth-child(2) {
     font-size: 0.88rem;
   }
 }
@@ -220,9 +235,9 @@ body {
     font-size: 0.78rem;
   }
 
-  .ranking-table td:nth-child(5),
   .ranking-table td:nth-child(6),
-  .ranking-table td:nth-child(7) {
+  .ranking-table td:nth-child(7),
+  .ranking-table td:nth-child(8) {
     padding-top: 0.3rem;
     padding-bottom: 0.3rem;
   }
