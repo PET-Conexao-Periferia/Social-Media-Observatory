@@ -12,7 +12,7 @@ rolagem_comentarios = 3
 
 # Período para filtrar posts 
 
-USE_LAST_DAYS = False      # True = ignora PERIOD_START e PERIOD_END
+USE_LAST_DAYS = True      # True = ignora PERIOD_START e PERIOD_END
 LAST_DAYS = 7
 
 PERIOD_START = "2026-09-22"    # exemplo: "2025-01-01" ou None
@@ -25,7 +25,7 @@ from Backend.Services.Auth.auth_service import (
     is_logged_in,
     login_instagram,
 )
-from Backend.Services.Collector.scraper_service import raspar_perfil
+from Backend.Services.Scraper.scraper_service import raspar_perfil
 from Backend.Services.Storage.storage_service import (
     carregar_posts_para_ranking,
 )
