@@ -203,7 +203,6 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
         wait = WebDriverWait(driver, 10) #pesquisar
         anchors = wait.until(
             EC.presence_of_all_elements_located((By.TAG_NAME, "a")))
-        print(f"Encontrados {len(anchors)} links totais")
     except Exception as e:
         print(f"Erro ao procurar links: {e}")
         anchors = []
@@ -246,18 +245,15 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                     print(f"Post {post_url} publicado em {post_date} é posterior ao fim do período; pulando")
                     continue
 
+            print(f"\nProcessando post: {post_url}")
+            print(f"Data de publicação: {post_dt}")
+
+            likes, comments_count, reposts = obter_metricas_post(driver)
+
             likes, comments_count, reposts = obter_metricas_post(driver)
             print(f"Curtidas: {likes}")
             print(f"Comentários: {comments_count}")
             print(f"Reposts: {reposts}")
-
-            # Salva o HTML do primeiro post para inspeção local (diagnóstico)
-            if idx == 0:
-                try:
-                    with open(DEBUG_POST_FILE, "w", encoding="utf-8") as f:
-                        f.write(driver.page_source)
-                except Exception as e:
-                    print(f'Falha ao salvar debug_post.html: {e}')
 
             # Localizar o container do post
             try:
@@ -266,33 +262,18 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                 )
             except Exception:
                 article = None
-
+                
+            # Capturar a legenda do post
             legenda = None # Capturar a legenda
 
-            # 1) Fallback: tentar meta tag og:description (contém legenda + info)
             try:
                 meta = driver.find_element(
                     By.CSS_SELECTOR, "meta[property='og:description']")
                 if meta:
                     legenda = meta.get_attribute('content')
-                    if legenda:
-                        print('Legenda obtida via meta[og:description]')
             except Exception:
                 pass
 
-            # 2) Se não encontrou via meta, usar heurística dentro do article
-            if not legenda and article is not None:
-                try:
-                    spans = article.find_elements(
-                        By.XPATH, ".//span[@dir='auto']")
-                    texts = [s.text.strip()
-                             for s in spans if s.text and s.text.strip()]
-                    if texts:
-                        # legenda costuma ser o texto mais longo
-                        legenda = max(texts, key=len)
-                        print(f'Legenda obtida via spans (len={len(legenda)})')
-                except Exception:
-                    legenda = None
 
             lista_comentarios = []  # Preparar lista de comentários
 
@@ -376,8 +357,6 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                 try:
                     spans = driver.find_elements(
                         By.XPATH, "//span[@dir='auto']")
-                    print(
-                        f'Fallback: encontrados {len(spans)} spans com dir="auto" na página')
                     candidates = []
                     seen_ancestors = set()
                     for s in spans:
@@ -395,13 +374,8 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                         except Exception:
                             continue
                     comment_items = candidates
-                    print(
-                        f'Fallback: candidatos a comentário obtidos: {len(comment_items)}')
                 except Exception as e:
                     print(f'Erro no fallback de spans: {e}')
-
-            print(
-                f'Encontrados {len(comment_items)} itens possíveis de comentário no artigo')
 
             # Coletar todos os comentários do post (sem limite)
             comentarios_processados = 0
@@ -443,7 +417,7 @@ def raspar_perfil(driver, perfil_alvo, quant_scrolagem=1, rolagem_comentarios=1,
                         # print(f"DEBUG: Comentário adicionado - {username}: {comment_text[:80]}...")
                 except Exception:
                     continue
-            print(f'Coletados {len(lista_comentarios)} comentários para {post_url}')
+            print(f'Comentários Coletados {len(lista_comentarios)} ')
 
             post_data = {
                 'post_url': post_url,

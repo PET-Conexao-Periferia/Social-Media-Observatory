@@ -126,7 +126,6 @@ def gerar_rankings(posts):
         ]
     ]
 
-    print(tabela_final.to_string(index=False))
 
     tabela_final.to_csv(
         RANKINGS_DIR / "ranking_posts_geral.csv",

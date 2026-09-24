@@ -12,11 +12,11 @@ rolagem_comentarios = 3
 
 # Período para filtrar posts 
 
-USE_LAST_DAYS = True      # True = ignora PERIOD_START e PERIOD_END
+USE_LAST_DAYS = False      # True = ignora PERIOD_START e PERIOD_END
 LAST_DAYS = 7
 
-PERIOD_START = "2025-11-01"    # exemplo: "2025-01-01" ou None
-PERIOD_END = "2026-09-31"
+PERIOD_START = "2026-09-22"    # exemplo: "2025-01-01" ou None
+PERIOD_END = "2026-09-23"
 
 from Backend.Services.Browser.driver_service import create_driver
 from Backend.Services.Auth.auth_service import (
@@ -120,10 +120,6 @@ def main():
                 rolagem_comentarios=rolagem_comentarios,
                 start_date=start_date,
                 end_date=end_date,
-            )
-
-            print(
-                f"{len(dados)} posts processados para {perfil}"
             )
 
 
