@@ -15,8 +15,8 @@ rolagem_comentarios = 3
 USE_LAST_DAYS = True      # True = ignora PERIOD_START e PERIOD_END
 LAST_DAYS = 7
 
-PERIOD_START = "2026-09-22"    # exemplo: "2025-01-01" ou None
-PERIOD_END = "2026-09-23"
+PERIOD_START = "2026-01-01"    # exemplo: "2025-01-01" ou None
+PERIOD_END = "2026-12-30"
 
 from Backend.Services.Browser.driver_service import create_driver
 from Backend.Services.Auth.auth_service import (
@@ -111,6 +111,8 @@ def main():
             except Exception:
                 end_date = None
 
+        posts_processados = set()
+
         for perfil in PERFIS:
             print(f"\nIniciando raspagem do perfil: {perfil}")
             dados, seguidores = raspar_perfil(
@@ -120,6 +122,7 @@ def main():
                 rolagem_comentarios=rolagem_comentarios,
                 start_date=start_date,
                 end_date=end_date,
+                posts_processados=posts_processados,
             )
 
 

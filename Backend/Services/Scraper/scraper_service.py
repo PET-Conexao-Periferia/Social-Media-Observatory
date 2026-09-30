@@ -1,4 +1,9 @@
-from Backend.Services.Scraper.profile_scraper import obter_urls_posts
+import time
+
+from Backend.Services.Scraper.profile_scraper import (
+    obter_urls_posts,
+    obter_seguidores
+)
 from Backend.Services.Scraper.post_scraper import raspar_post
 from Backend.Services.Storage.storage_service import salvar_post_json
 
@@ -10,8 +15,13 @@ def raspar_perfil(
     quant_scrolagem=1,
     rolagem_comentarios=1,
     start_date=None,
-    end_date=None
+    end_date=None,
+    posts_processados=None
 ):
+    # Cria o controle local caso nenhum controle compartilhado seja informado.
+    if posts_processados is None:
+        posts_processados = set()
+
     # Carrega o perfil e obtém os URLs dos posts e os seguidores.
     seen, seguidores = obter_urls_posts(
         driver,
@@ -23,6 +33,12 @@ def raspar_perfil(
 
     # Processa cada post encontrado individualmente.
     for idx, post_url in enumerate(seen):
+        if post_url in posts_processados:
+            print(
+                f"Post já processado nesta execução: {post_url}"
+            )
+            continue
+
         try:
             post_data = raspar_post(
                 driver,
@@ -41,6 +57,8 @@ def raspar_perfil(
             salvar_post_json(post_data)
             dados_completos.append(post_data)
 
+            posts_processados.add(post_url)
+
         except Exception as e:
             # Em caso de erro, mantém o registro mínimo do post.
             post_data = {
@@ -55,5 +73,6 @@ def raspar_perfil(
 
             salvar_post_json(post_data)
             dados_completos.append(post_data)
+            posts_processados.add(post_url)
 
     return dados_completos, seguidores

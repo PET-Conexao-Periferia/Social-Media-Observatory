@@ -8,6 +8,7 @@ from Backend.Config.paths import (
 )
 
 
+# Calcula o score de engajamento proporcional aos seguidores.
 def calcular_score(row):
     likes = row['likes']
     comments = row['comments_count']
@@ -21,6 +22,8 @@ def calcular_score(row):
     score = (math.log(M + 1) / math.log(seguidores_validos + 1)) * 100
     return round(score, 2)
 
+
+# Gera um resumo da legenda para exibição no ranking.
 def gerar_resumo_legenda(texto, limite=50):
     if not texto:
         return ''
@@ -30,6 +33,38 @@ def gerar_resumo_legenda(texto, limite=50):
     return ' '.join(palavras[:limite]) + '...'
 
 
+# Remove duplicidades mantendo a ocorrência com mais seguidores.
+def remover_posts_duplicados(df):
+    if df.empty:
+        return df
+
+    df = df.copy()
+
+    df['post_url'] = df['post_url'].fillna('').astype(str).str.strip()
+
+    posts_com_url = df[df['post_url'] != ''].copy()
+    posts_sem_url = df[df['post_url'] == ''].copy()
+
+    if posts_com_url.empty:
+        return df
+
+    posts_com_url = posts_com_url.sort_values(
+        by=['post_url', 'followers'],
+        ascending=[True, False]
+    )
+
+    posts_com_url = posts_com_url.drop_duplicates(
+        subset='post_url',
+        keep='first'
+    )
+
+    return pd.concat(
+        [posts_com_url, posts_sem_url],
+        ignore_index=True
+    )
+
+
+# Gera os rankings geral e por perfil.
 def gerar_rankings(posts):
     if not posts:
         print("Nenhum post encontrado para ranking.")
@@ -55,9 +90,24 @@ def gerar_rankings(posts):
 
     df['followers'] = df['followers'].replace(0, 1)
 
+    total_antes = len(df)
 
-    df['legenda_resumo'] = df['legenda_post'].apply(gerar_resumo_legenda)
+    # Remove duplicidades antes de calcular o score.
+    df = remover_posts_duplicados(df)
 
+    total_depois = len(df)
+
+    duplicados_removidos = total_antes - total_depois
+
+    if duplicados_removidos > 0:
+        print(
+            f"Posts duplicados removidos do ranking: "
+            f"{duplicados_removidos}"
+        )
+
+    df['legenda_resumo'] = df['legenda_post'].apply(
+        gerar_resumo_legenda
+    )
 
     df['score_engajamento'] = df.apply(
         calcular_score,
@@ -80,12 +130,17 @@ def gerar_rankings(posts):
         ranking_por_perfil[perfil] = ranking
 
     for perfil, ranking in ranking_por_perfil.items():
-        perfil_filename = re.sub(r'[^a-zA-Z0-9_-]', '_', perfil)
+        perfil_filename = re.sub(
+            r'[^a-zA-Z0-9_-]',
+            '_',
+            perfil
+        )
 
         csv_path = (
-           RANKING_BY_PROFILE_DIR
+            RANKING_BY_PROFILE_DIR
             / f"ranking_{perfil_filename}.csv"
         )
+
         ranking.to_csv(
             csv_path,
             index=False,
@@ -96,6 +151,7 @@ def gerar_rankings(posts):
             FRONTEND_RANKING_DIR
             / f"ranking_{perfil_filename}.json"
         )
+
         ranking.to_json(
             json_path,
             orient='records',
@@ -125,7 +181,6 @@ def gerar_rankings(posts):
             'score_engajamento',
         ]
     ]
-
 
     tabela_final.to_csv(
         RANKINGS_DIR / "ranking_posts_geral.csv",
