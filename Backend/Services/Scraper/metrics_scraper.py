@@ -44,7 +44,10 @@ def obter_metricas_post(driver):
             "/section[1]/div[1]"
         )
 
-        # Tenta primeiro o layout que exibe a quantidade de curtidas.
+        likes_text = None
+        comments_text = None
+        reposts_text = None
+
         try:
             likes_element = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((
@@ -66,18 +69,55 @@ def obter_metricas_post(driver):
             ).text
 
         except Exception:
-            # Quando curtidas não aparecem, os XPaths das outras métricas mudam.
-            likes_text = "0"
+            try:
+                likes_elements = driver.find_elements(
+                    By.XPATH,
+                    "//button[contains(@aria-label, 'curtida') or "
+                    "contains(@aria-label, 'curtidas') or "
+                    "contains(@aria-label, 'like') or "
+                    "contains(@aria-label, 'likes')]"
+                )
 
-            comments_text = driver.find_element(
-                By.XPATH,
-                f"{base_xpath}/span[3]"
-            ).text
+                for element in likes_elements:
+                    aria_label = element.get_attribute("aria-label") or ""
+                    texto = element.text.strip()
 
-            reposts_text = driver.find_element(
-                By.XPATH,
-                f"{base_xpath}/span[4]"
-            ).text
+                    if aria_label:
+                        likes_text = aria_label
+                        break
+
+                    if texto:
+                        likes_text = texto
+                        break
+
+            except Exception:
+                likes_text = None
+
+            try:
+                comments_element = driver.find_element(
+                    By.XPATH,
+                    f"{base_xpath}/span[3]"
+                )
+                comments_text = comments_element.text
+
+            except Exception:
+                comments_text = "0"
+
+            try:
+                reposts_element = driver.find_element(
+                    By.XPATH,
+                    f"{base_xpath}/span[4]"
+                )
+                reposts_text = reposts_element.text
+
+            except Exception:
+                reposts_text = None
+
+        if likes_text is None:
+            raise Exception("Não foi possível obter a quantidade de curtidas")
+
+        if reposts_text is None:
+            raise Exception("Não foi possível obter a quantidade de reposts")
 
         likes = converter_metrica(likes_text)
         comments = converter_metrica(comments_text)
@@ -86,5 +126,4 @@ def obter_metricas_post(driver):
         return likes, comments, reposts
 
     except Exception as e:
-        print(f"Erro ao obter métricas do post: {e}")
-        return 0, 0, 0
+        return None, None, None
