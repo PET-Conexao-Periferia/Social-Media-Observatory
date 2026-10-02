@@ -40,23 +40,6 @@ def salvar_post_json(post):
 
     try:
 
-        if post.get("error"):
-            print(
-                f"Post NÃO salvo devido a erro na coleta: "
-                f"{post.get('post_url')} - {post.get('error')}"
-            )
-            return
-
-        likes = post.get("likes")
-        comments_count = post.get("comments_count")
-
-        if likes is None or comments_count is None:
-            print(
-                f"Post NÃO salvo: métricas não obtidas "
-                f"({post.get('post_url')})"
-            )
-            return
-
         PROFILES_DIR.mkdir(parents=True, exist_ok=True)
 
         perfil = post.get("source_profile") or "unknown_profile"
@@ -84,6 +67,12 @@ def salvar_post_json(post):
             slug = str(int(time.time() * 1000))
 
         legenda = post.get("legenda_post") or ""
+
+                # Usa primeiro a métrica capturada diretamente do Instagram pelo scraper.
+
+        likes = post.get("likes")
+
+        comments_count = post.get("comments_count")
 
         if legenda:
 
@@ -188,9 +177,13 @@ def salvar_post_json(post):
 
             "legenda_post": legenda,
 
-            "likes": likes,
+            "likes": likes if likes is not None else 0,
 
-            "comments_count": comments_count,
+            "comments_count": (
+                comments_count
+                if comments_count is not None
+                else len(comentarios_proc)
+            ),
 
             "reposts": post.get("reposts", 0),
 
