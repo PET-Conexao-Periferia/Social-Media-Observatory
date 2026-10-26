@@ -3,36 +3,34 @@
 # importante: se quiser rodar com a janela do navegador, certifique-se de que headless=False nos arquivos main.py e driver.py nas linhas 71 e 6, respectivamente. Por padrão, roda sem a janela.
 
 import os
-from datetime import datetime, timedelta
+import re
+from datetime import datetime
 from dotenv import load_dotenv
 
 # VARIAVEIS 
 PESO_LIKES = 1.4
 PESO_COMMENTS = 8.6
-quant_scrolagem =  1 #quanto maior o número, mais antigo será o post
+quant_scrolagem =  20 #quanto maior o número, mais antigo será o post
 rolagem_comentarios = 1
 total_posicoes = 10 #número de posições a exibir no ranking final
 
 # Período para filtrar posts 
+PERIOD_START = "2024-11-01"    # exemplo: "2025-01-01" ou None
+PERIOD_END = "2026-05-30"
 
-USE_LAST_DAYS = True      # True = ignora PERIOD_START e PERIOD_END
-LAST_DAYS = 7
-
-PERIOD_START = "2025-11-01"    # exemplo: "2025-01-01" ou None
-PERIOD_END = "2026-05-31"
-
-from Backend.Services.Browser.driver_service import create_driver
-from Backend.Services.Auth.auth_service import (
+from driver import create_driver
+from auth import (
     carregar_cookies,
     salvar_cookies,
     is_logged_in,
     login_instagram,
 )
-from Backend.Services.Collector.scraper_service import raspar_perfil
-from Backend.Services.Storage.storage_service import (
+from scraper import raspar_perfil
+from storage import (
+    salvar_json,
     carregar_posts_para_ranking,
 )
-from Backend.Services.Ranking.ranking_service import gerar_rankings
+from ranking import gerar_rankings
 
 
 
@@ -44,7 +42,19 @@ load_dotenv()
 USUARIO = os.getenv("USUARIO")
 SENHA = os.getenv("SENHA")
 
-PERFIS = os.getenv("PERFIS").split(",") if os.getenv("PERFIS") else []
+def _normalizar_perfis(valor):
+    if not valor:
+        return []
+
+    perfis = []
+    for perfil in valor:
+        perfil_limpo = perfil.strip()
+        if perfil_limpo:
+            perfis.append(perfil_limpo)
+    return perfis
+
+
+PERFIS = _normalizar_perfis(os.getenv("PERFIS").split(",") if os.getenv("PERFIS") else [])
 
 
 # CARREGAR PERFIS DO TXT
@@ -58,7 +68,7 @@ try:
             if line.strip() and not line.strip().startswith("#")
         ]
         if file_perfis:
-            PERFIS = file_perfis
+            PERFIS = _normalizar_perfis(file_perfis)
 except FileNotFoundError:
     pass
 except Exception as e:
@@ -70,7 +80,7 @@ except Exception as e:
 
 
 def main():
-    driver = create_driver(headless=True)  #headless=True para rodar sem a janela do navegador
+    driver = create_driver(headless=True)  #headless=False para rodar com a janela do navegador
 
     try:
         loaded = carregar_cookies(driver)
@@ -90,29 +100,17 @@ def main():
                     "Você pode continuar manualmente no navegador aberto."
                 )
 
+        all_data = []
 
         # converter strings de período para objetos date (ou None)
-        if USE_LAST_DAYS:
-            end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=LAST_DAYS)
-        else:
-            try:
-                start_date = (
-                    datetime.fromisoformat(PERIOD_START).date()
-                    if PERIOD_START
-                    else None
-                )
-            except Exception:
-                start_date = None
-
-            try:
-                end_date = (
-                    datetime.fromisoformat(PERIOD_END).date()
-                    if PERIOD_END
-                    else None
-                )
-            except Exception:
-                end_date = None
+        try:
+            start_date = datetime.fromisoformat(PERIOD_START).date() if PERIOD_START else None
+        except Exception:
+            start_date = None
+        try:
+            end_date = datetime.fromisoformat(PERIOD_END).date() if PERIOD_END else None
+        except Exception:
+            end_date = None
 
         for perfil in PERFIS:
             print(f"\nIniciando raspagem do perfil: {perfil}")
@@ -125,10 +123,13 @@ def main():
                 end_date=end_date,
             )
 
-            print(
-                f"{len(dados)} posts processados para {perfil}"
-            )
+            for post in dados:
+                post["source_profile"] = perfil
+                post["followers"] = seguidores
 
+            all_data.extend(dados)
+
+        salvar_json(all_data)
 
         posts = carregar_posts_para_ranking()
         gerar_rankings(

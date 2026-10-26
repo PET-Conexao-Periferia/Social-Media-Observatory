@@ -95,7 +95,7 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
             FRONTEND_RANKING_DIR
             / f"ranking_{perfil_filename}.json"
         )
-        ranking.head(10).to_json(
+        ranking.to_json(
             json_path,
             orient='records',
             force_ascii=False,
@@ -132,7 +132,7 @@ def gerar_rankings(posts, PESO_LIKES, PESO_COMMENTS, total_posicoes):
         encoding='utf-8-sig'
     )
 
-    tabela_final.head(total_posicoes).to_json(
+    tabela_final.to_json(
         FRONTEND_RANKING_DIR / "ranking_posts_geral.json",
         orient='records',
         force_ascii=False,
