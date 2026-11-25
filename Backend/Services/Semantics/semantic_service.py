@@ -8,7 +8,7 @@ from nltk.corpus import stopwords
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from Backend.Config.paths import DATA_DIR, RANKINGS_DIR
+from Backend.Config.paths import DATA_DIR, LAST_CLUSTER_FILE, RANKINGS_DIR
 
 CUSTOM_STOP_WORDS = {
     # Palavras genéricas e verbos comuns
@@ -52,8 +52,21 @@ def _post_key(post):
     return post.get("post_url") or post.get("slug") or post.get("id")
 
 
+def _deduplication_key(post):
+    key = _post_key(post)
+    if key is None:
+        return None
+    value = str(key).strip()
+    if not value:
+        return None
+    if value.startswith(("http://", "https://")):
+        value = value.rstrip("/").lower()
+    return value
+
+
 def _load_posts():
     posts = []
+    seen_keys = set()
     posts_root = _posts_dir()
     if not posts_root.exists():
         return posts
@@ -62,10 +75,15 @@ def _load_posts():
         for path in profile_dir.rglob("*.json"):
             if path.name == "index.json":
                 continue
-            posts.extend(
-                item for item in _read_json_objects(path)
-                if isinstance(item, dict)
-            )
+            for item in _read_json_objects(path):
+                if not isinstance(item, dict):
+                    continue
+                deduplication_key = _deduplication_key(item)
+                if deduplication_key is not None:
+                    if deduplication_key in seen_keys:
+                        continue
+                    seen_keys.add(deduplication_key)
+                posts.append(item)
     return posts
 
 
@@ -159,7 +177,10 @@ def _gerar_log_debug(rows, stop_words_usadas):
         print(f"Aviso: Não foi possível salvar o arquivo de log: {e}")
 
 
-def _resolve_period(posts, start_date=None, end_date=None):
+def _resolve_period(posts, start_date=None, end_date=None, period_mode="last7"):
+    if period_mode == "all":
+        return None, None
+
     if start_date is not None or end_date is not None:
         return start_date, end_date
 
@@ -181,9 +202,9 @@ def _resolve_period(posts, start_date=None, end_date=None):
     return end_date - timedelta(days=6), end_date
 
 
-def _dataset(start_date=None, end_date=None):
+def _dataset(start_date=None, end_date=None, period_mode="last7"):
     posts = _load_posts()
-    start_date, end_date = _resolve_period(posts, start_date, end_date)
+    start_date, end_date = _resolve_period(posts, start_date, end_date, period_mode)
     scores = _load_scores()
     rows = []
     for post in posts:
@@ -262,20 +283,20 @@ def _encontrar_k_ideal(ks, inertias):
     return k_ideal
 
 
-def calcular_cotovelo(start_date=None, end_date=None):
-    rows = _dataset(start_date, end_date)
+def calcular_cotovelo(start_date=None, end_date=None, period_mode="last7"):
+    rows = _dataset(start_date, end_date, period_mode)
     _, matrix = _vectorize(rows)
     max_k = min(50, matrix.shape[0])
     ks = list(range(2, max_k + 1))
     
     inertias = [
-        float(KMeans(n_clusters=k, random_state=42, n_init=10).fit(matrix).inertia_)
+        float(KMeans(n_clusters=k, random_state=42, n_init=50).fit(matrix).inertia_)
         for k in ks
     ]
     k_sugerido = _encontrar_k_ideal(ks, inertias)
     
     resolved_start, resolved_end = _resolve_period(
-        _load_posts(), start_date, end_date
+        _load_posts(), start_date, end_date, period_mode
     )
     return {
         "k_sugerido": k_sugerido,
@@ -287,56 +308,50 @@ def calcular_cotovelo(start_date=None, end_date=None):
     }
 
 
-def clusterizar(k_escolhido, start_date=None, end_date=None):
-    rows = _dataset(start_date, end_date)
+def salvar_ultima_clusterizacao(resultado):
+    LAST_CLUSTER_FILE.parent.mkdir(parents=True, exist_ok=True)
+    arquivo_temporario = LAST_CLUSTER_FILE.with_suffix(".tmp")
+    try:
+        with arquivo_temporario.open("w", encoding="utf-8") as file:
+            json.dump(resultado, file, ensure_ascii=False, indent=2)
+        arquivo_temporario.replace(LAST_CLUSTER_FILE)
+    except (OSError, TypeError, ValueError) as error:
+        try:
+            arquivo_temporario.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise RuntimeError(
+            f"Não foi possível salvar a última clusterização em {LAST_CLUSTER_FILE}."
+        ) from error
+
+
+def carregar_ultima_clusterizacao():
+    if not LAST_CLUSTER_FILE.exists():
+        return None
+    try:
+        with LAST_CLUSTER_FILE.open("r", encoding="utf-8") as file:
+            resultado = json.load(file)
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(
+            f"Não foi possível ler a última clusterização em {LAST_CLUSTER_FILE}."
+        ) from error
+    if not isinstance(resultado, dict):
+        raise RuntimeError("O arquivo da última clusterização possui formato inválido.")
+    return resultado
+
+
+def clusterizar(k_escolhido, start_date=None, end_date=None, period_mode="last7"):
+    rows = _dataset(start_date, end_date, period_mode)
     vectorizer, matrix = _vectorize(rows)
     if not 2 <= k_escolhido <= min(50, len(rows)):
         raise ValueError(f"k deve estar entre 2 e {min(50, len(rows))}.")
 
-    model = KMeans(n_clusters=k_escolhido, random_state=42, n_init=10)
-    labels = model.fit_predict(matrix)
-    terms = vectorizer.get_feature_names_out()
-    groups = []
-    
-    for cluster_id in range(k_escolhido):
-        indexes = [index for index, label in enumerate(labels) if label == cluster_id]
-        keywords = [terms[index] for index in model.cluster_centers_[cluster_id].argsort()[::-1][:10]]
-        cluster_posts = [{key: row[key] for key in (
-            "id", "post_url", "legenda_post", "source_profile", "published_at", "score_engajamento"
-        )} for index in indexes for row in [rows[index]]]
-        
-        average = sum(post["score_engajamento"] for post in cluster_posts) / len(cluster_posts)
-        groups.append({
-            "cluster_id": cluster_id,
-            "engajamento_medio": round(average, 2),
-            "total_posts": len(cluster_posts),
-            "palavras_chave": keywords,
-            "posts": cluster_posts,
-        })
-        
-    groups.sort(key=lambda group: group["engajamento_medio"], reverse=True)
-    resolved_start, resolved_end = _resolve_period(
-        _load_posts(), start_date, end_date
-    )
-    return {
-        "k_escolhido": k_escolhido,
-        "total_clusters": len(groups),
-        "total_posts": len(rows),
-        "periodo": {
-            "start_date": resolved_start.isoformat() if resolved_start else None,
-            "end_date": resolved_end.isoformat() if resolved_end else None,
-        },
-        "clusters": groups,
-    }
-
-
-def clusterizar(k_escolhido, start_date=None, end_date=None):
-    rows = _dataset(start_date, end_date)
-    vectorizer, matrix = _vectorize(rows)
-    if not 2 <= k_escolhido <= min(50, len(rows)):
-        raise ValueError(f"k deve estar entre 2 e {min(50, len(rows))}.")
-
-    model = KMeans(n_clusters=k_escolhido, random_state=42, n_init=10)
+    elbow_ks = list(range(2, min(50, matrix.shape[0]) + 1))
+    elbow_inertias = [
+        float(KMeans(n_clusters=k, random_state=42, n_init=50).fit(matrix).inertia_)
+        for k in elbow_ks
+    ]
+    model = KMeans(n_clusters=k_escolhido, random_state=42, n_init=50)
     labels = model.fit_predict(matrix)
     terms = vectorizer.get_feature_names_out()
     groups = []
@@ -364,15 +379,23 @@ def clusterizar(k_escolhido, start_date=None, end_date=None):
     # Mantém a ordenação por engajamento médio
     groups.sort(key=lambda group: group["engajamento_medio"], reverse=True)
     resolved_start, resolved_end = _resolve_period(
-        _load_posts(), start_date, end_date
+        _load_posts(), start_date, end_date, period_mode
     )
-    return {
+    resultado = {
         "k_escolhido": k_escolhido,
+        "k_sugerido": _encontrar_k_ideal(elbow_ks, elbow_inertias),
+        "elbow": [
+            {"k": k, "inertia": inertia}
+            for k, inertia in zip(elbow_ks, elbow_inertias)
+        ],
         "total_clusters": len(groups),
         "total_posts": len(rows),
+        "period_mode": period_mode,
         "periodo": {
             "start_date": resolved_start.isoformat() if resolved_start else None,
             "end_date": resolved_end.isoformat() if resolved_end else None,
         },
         "clusters": groups,
     }
+    salvar_ultima_clusterizacao(resultado)
+    return resultado

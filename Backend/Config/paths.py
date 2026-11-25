@@ -16,6 +16,8 @@ COOKIES_FILE = AUTH_DIR / "cookies_instagram.json"
 
 DEBUG_POST_FILE = BACKEND_DIR / "debug_post.html"
 
+LAST_CLUSTER_FILE = DATA_DIR / "ultima_clusterizacao.json"
+
 FRONTEND_RANKING_DIR = (
     BACKEND_DIR.parent
     / "Frontend"

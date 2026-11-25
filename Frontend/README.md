@@ -36,3 +36,32 @@ npm run dev
 ```sh
 npm run build
 ```
+
+A última clusterização realizada é salva pelo backend em
+`Backend/Data/ultima_clusterizacao.json` e restaurada automaticamente ao abrir
+`/clusters`. O `localStorage` do navegador permanece apenas como fallback para
+análises antigas.
+
+### Executar o backend
+
+Na raiz do repositório, inicie a API:
+
+```powershell
+python -m uvicorn Backend.api:app --reload --host 127.0.0.1 --port 8000
+```
+
+### Executar o frontend
+
+Em outro terminal, na raiz do repositório:
+
+```powershell
+cd Frontend
+npm install
+npm run dev
+```
+
+## Organização das páginas
+
+`src/App.vue` mantém a navegação e seleciona a página pela URL. A análise de
+clusters fica isolada em `src/pages/ClusterAnalysis.vue`; funções de formatação
+compartilhadas ficam em `src/utils/legenda.js`.
